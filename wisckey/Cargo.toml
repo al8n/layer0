@@ -1,5 +1,5 @@
 [package]
-name = "virtualfs"
+name = "wisckey"
 version = "0.0.0"
 repository.workspace = true
 edition.workspace = true
@@ -12,12 +12,11 @@ description = "A placeholder"
 
 [features]
 default = ["std"]
-std = []
-future = []
+std = ["bytes/default", "virtualfs/default", "either/default"]
+future = ["virtualfs/future"]
 
 [dependencies]
-
-
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+bytes.workspace = true
+either = { version = "1", default-features = false }
+virtualfs.workspace = true
+paste = "1"
