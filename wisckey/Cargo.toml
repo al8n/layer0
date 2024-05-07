@@ -20,3 +20,5 @@ bytes.workspace = true
 either = { version = "1", default-features = false }
 virtualfs.workspace = true
 paste = "1"
+
+skl = { version = "0.6", optional = true, features = ["memmap"] }

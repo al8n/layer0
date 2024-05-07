@@ -11,6 +11,15 @@ extern crate std;
 #[cfg(not(feature = "std"))]
 extern crate alloc as std;
 
+#[cfg(feature = "std")]
+use std::error::Error;
+
+#[cfg(not(feature = "std"))]
+trait Error: core::fmt::Debug + core::fmt::Display {}
+
+#[cfg(not(feature = "std"))]
+impl<T: core::fmt::Debug + core::fmt::Display> Error for T {}
+
 /// From usize
 pub trait FromUsize: Sized {
   /// Create a new instance from the given usize.

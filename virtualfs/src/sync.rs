@@ -53,12 +53,12 @@ pub trait File: Sized + 'static {
   fn seek(&mut self, pos: SeekFrom) -> Result<(), Self::Error>;
 
   /// Seek to the start of the file.
-  fn seek_start(&mut self) -> Result<(), Self::Error> {
+  fn rewind(&mut self) -> Result<(), Self::Error> {
     self.seek(SeekFrom::Start(0))
   }
 
   /// Seek to the end of the file.
-  fn seek_end(&mut self) -> Result<(), Self::Error> {
+  fn seek_to_end(&mut self) -> Result<(), Self::Error> {
     self.seek(SeekFrom::End(0))
   }
 

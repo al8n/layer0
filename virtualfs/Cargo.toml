@@ -12,11 +12,13 @@ description = "A placeholder"
 
 [features]
 default = ["std"]
-std = []
+std = ["fs4"]
 future = []
+memmap = ["std", "dep:memmap2"]
 
 [dependencies]
-
+memmap2 = { version = "0.9", optional = true }
+fs4 = { version = "0.8", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
