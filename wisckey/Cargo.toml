@@ -21,6 +21,6 @@ either = { version = "1", default-features = false }
 virtualfs.workspace = true
 paste = "1"
 viewit = "0.1.5"
-
+thiserror = "1"
 
 skl = { version = "0.6", optional = true, features = ["memmap"] }

@@ -2,7 +2,7 @@ use super::*;
 use core::cell::RefCell;
 use std::io;
 
-use skl::{SkipMap, Trailer};
+use skl::{SkipMap, Trailer, map::EntryRef as MapEntryRef};
 
 pub use skl::{Ascend, Comparator, Descend};
 
@@ -109,6 +109,15 @@ pub struct CreateOptions {
     setter(attrs(doc = "Sets whether to lock the skip log."))
   )]
   lock: bool,
+
+  /// Whether to sync on write.
+  /// 
+  /// If `true`, the skip log will sync the data to disk on write.
+  #[viewit(
+    getter(const, attrs(doc = "Returns if we should sync on write.")),
+    setter(attrs(doc = "Sets whether to sync on write."))
+  )]
+  sync_on_write: bool,
 }
 
 /// The options for opening a skip log.
@@ -135,10 +144,61 @@ std::thread_local! {
   static BUF: RefCell<std::string::String> = RefCell::new(std::string::String::with_capacity(9));
 }
 
+/// Errors that can occur when working with a skip log.
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+  /// An I/O error occurred.
+  #[error(transparent)]
+  IO(#[from] io::Error),
+  /// A skip log error occurred.
+  #[error(transparent)]
+  Log(#[from] skl::map::Error),
+}
+
 /// A write-ahead log based on on-disk [`SkipMap`].
 pub struct SkipLog<C = Ascend> {
   map: SkipMap<Meta, C>,
   fid: u32,
+  sync_on_write: bool,
+  ro: bool,
+}
+
+impl<C> SkipLog<C> {
+  /// Flushes outstanding memory map modifications to disk.
+  #[inline]
+  pub fn flush(&self) -> io::Result<()> {
+    self.map.flush()
+  }
+
+  /// Asynchronously flushes outstanding memory map modifications to disk.
+  #[inline]
+  pub fn flush_async(&self) -> io::Result<()> {
+    self.map.flush_async()
+  }
+
+  /// Returns the file ID of the skip log.
+  #[inline]
+  pub const fn fid(&self) -> u32 {
+    self.fid
+  }
+
+  /// Returns `true` if the skip log is read only.
+  #[inline]
+  pub const fn read_only(&self) -> bool {
+    self.ro
+  }
+
+  /// Returns the current size of the skip log.
+  #[inline]
+  pub fn size(&self) -> usize {
+    self.map.size()
+  }
+
+  /// Returns the capacity of the skip log.
+  #[inline]
+  pub fn capacity(&self) -> usize {
+    self.map.capacity()
+  }
 }
 
 impl<C: Comparator> SkipLog<C> {
@@ -151,7 +211,7 @@ impl<C: Comparator> SkipLog<C> {
       buf.clear();
       write!(buf, "{:05}.{}", opts.fid, EXTENSION).unwrap();
       SkipMap::<Meta, C>::mmap_mut_with_comparator(buf.as_str(), opts.size, opts.lock, cmp)
-        .map(|map| Self { map, fid: opts.fid })
+        .map(|map| Self { map, fid: opts.fid, sync_on_write: opts.sync_on_write, ro: false })
     })
   }
 
@@ -166,16 +226,94 @@ impl<C: Comparator> SkipLog<C> {
       buf.clear();
       write!(buf, "{:05}.{}", opts.fid, EXTENSION).unwrap();
       SkipMap::<Meta, C>::mmap_with_comparator(buf.as_str(), opts.lock, cmp)
-        .map(|map| Self { map, fid: opts.fid })
+        .map(|map| Self { map, fid: opts.fid, sync_on_write: false, ro: true })
     })
   }
 
-  /// Returns the file ID of the skip log.
+  /// Inserts the given key and value to the skip log.
   #[inline]
-  pub const fn fid(&self) -> u32 {
-    self.fid
+  pub fn insert(&self, meta: Meta, key: &[u8], value: &[u8]) -> Result<(), Error> {
+    match self.map.insert(meta, key, value) {
+      Ok(_) => {
+        if self.sync_on_write {
+          self.flush()?;
+        }
+        Ok(())
+      },
+      Err(e) => Err(Error::Log(e)),
+    }
+  }
+
+  /// Inserts a batch of key-value pairs to the skip log.
+  /// 
+  /// ## Note
+  /// This method does not guarantee atomicity, which means that if the method fails in the middle of writing the batch,
+  /// some of the key-value pairs may be written to the skip log.
+  #[inline]
+  pub fn write_batch<'a>(&'a self, batch: impl Iterator<Item = (Meta, &'a [u8], &'a [u8])>) -> Result<(), Error> {
+    for (meta, key, value) in batch {
+      self.map.insert(meta, key, value)?;
+    }
+
+    if self.sync_on_write {
+      self.flush()?;
+    }
+
+    Ok(())
+  }
+
+  /// Gets the value associated with the given key.
+  #[inline]
+  pub fn get<'a, 'b: 'a>(&'a self, version: u64, key: &'b [u8]) -> Option<MapEntryRef<'a, Meta>> {
+    self.map.get(version, key).and_then(|ent| {
+      if ent.trailer().is_removed() {
+        None
+      } else {
+        Some(ent)
+      }
+    })
   }
 }
+
+/// A reference to an entry in the skip log.
+#[derive(Debug, Copy, Clone)]
+pub struct EntryRef<'a> {
+  ent: MapEntryRef<'a, Meta>,
+}
+
+impl<'a> EntryRef<'a> {
+  /// Returns the key of the entry.
+  #[inline]
+  pub const fn key(&self) -> &[u8] {
+    self.ent.key()
+  }
+
+  /// Returns the value of the entry.
+  #[inline]
+  pub const fn value(&self) -> &[u8] {
+    self.ent.value()
+  }
+
+  /// Returns if the value of the entry is a value pointer.
+  #[inline]
+  pub const fn is_pointer(&self) -> bool {
+    self.ent.trailer().is_pointer()
+  }
+}
+
+
+// pub struct SkipLogIterator<'a, C> {
+//   iter: skl::map::MapIterator<'a, Meta, C>,
+// }
+
+// impl<'a, C: Comparator> Iterator for SkipLogIterator<'a, C> {
+//   type Item = EntryRef<'a>;
+
+//   fn next(&mut self) -> Option<Self::Item> {
+//     self.iter.next().map(|ent| EntryRef { ent })
+//   }
+// }
+
 
 #[cfg(test)]
 mod tests {
