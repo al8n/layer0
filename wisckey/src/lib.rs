@@ -11,14 +11,17 @@ extern crate std;
 #[cfg(not(feature = "std"))]
 extern crate alloc as std;
 
+use core::mem;
 #[cfg(feature = "std")]
-use std::error::Error;
+pub use std::error::Error;
 
 #[cfg(not(feature = "std"))]
-trait Error: core::fmt::Debug + core::fmt::Display {}
+pub trait Error: core::fmt::Debug + core::fmt::Display {}
 
 #[cfg(not(feature = "std"))]
 impl<T: core::fmt::Debug + core::fmt::Display> Error for T {}
+
+const MAX_ENCODED_VALUE_POINTER_SIZE: usize = mem::size_of::<u32>() + 10 + mem::size_of::<u64>();
 
 /// From usize
 pub trait FromUsize: Sized {
@@ -53,26 +56,34 @@ macro_rules! impl_from_into_usize {
 impl_from_into_usize!(u8, u16, u32, u64);
 
 /// The size of the size of value in the log.
-pub trait ValueSize: FromUsize + IntoUsize + Sized {
-  /// The error type for this value size.
-  type Error;
+pub trait ValueSize: sealed::Sealed {}
 
-  /// The maximum size can be represented by this value size.
-  const MAX_SIZE: usize;
+mod sealed {
+  use super::{FromUsize, IntoUsize};
 
-  /// The maximum encoded size in bytes.
-  ///
-  /// e.g. u8 is 1 byte, u16 is 2 bytes.
-  const MAX_ENCODED_SIZE: usize;
+  pub trait Sealed: FromUsize + IntoUsize + Sized {
+    /// The error type for this value size.
+    type Error;
 
-  /// Returns the encoded size of this value size.
-  fn encoded_size(&self) -> usize;
+    /// The maximum size can be represented by this value size.
+    const MAX_SIZE: usize;
 
-  /// Encodes the value size into the buffer.
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error>;
+    /// The maximum encoded size in bytes.
+    ///
+    /// e.g. u8 is 1 byte, u16 is 2 bytes.
+    const MAX_ENCODED_SIZE: usize;
 
-  /// Decodes the value size from the buffer, and returns the number of bytes consumed and self.
-  fn decode(buf: &[u8]) -> Result<(usize, Self), Self::Error>;
+    /// Returns the encoded size of this value size.
+    fn encoded_size(&self) -> usize;
+
+    /// Encodes the value size into the buffer.
+    fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error>;
+
+    /// Decodes the value size from the buffer, and returns the number of bytes consumed and self.
+    fn decode(buf: &[u8]) -> Result<(usize, Self), Self::Error>;
+  }
+
+  impl<T: Sealed> super::ValueSize for T {}
 }
 
 /// The encoded size of the value is fixed.
@@ -112,7 +123,7 @@ macro_rules! impl_fixed_value_size {
         #[cfg(feature = "std")]
         impl std::error::Error for [< $ident:camel ValueSizeError >] {}
 
-        impl ValueSize for $ident {
+        impl sealed::Sealed for $ident {
           type Error = [< $ident:camel ValueSizeError >];
 
           const MAX_SIZE: usize = $ident::MAX as usize;
@@ -159,7 +170,7 @@ impl_fixed_value_size!(
   u16::{ |buf: &[u8]| u16::from_le_bytes([buf[0], buf[1]]) },
 );
 
-impl ValueSize for u32 {
+impl sealed::Sealed for u32 {
   type Error = VarintError;
 
   const MAX_SIZE: usize = u32::MAX as usize;
@@ -178,7 +189,7 @@ impl ValueSize for u32 {
   }
 }
 
-impl ValueSize for u64 {
+impl sealed::Sealed for u64 {
   type Error = VarintError;
 
   const MAX_SIZE: usize = u64::MAX as usize;
@@ -197,17 +208,17 @@ impl ValueSize for u64 {
   }
 }
 
-pub struct ValuePointer<I, S = u32> {
-  fid: I,
-  offset: u64,
+pub struct ValuePointer<S = u32> {
+  fid: u32,
   size: S,
+  offset: u64,
 }
 
-impl<I, S> ValuePointer<I, S> {
+impl<S> ValuePointer<S> {
   /// Returns the id of the file which contains the value.
   #[inline]
-  pub const fn fid(&self) -> &I {
-    &self.fid
+  pub const fn fid(&self) -> u32 {
+    self.fid
   }
 
   /// Returns the offset of the value in the file.
@@ -220,6 +231,14 @@ impl<I, S> ValuePointer<I, S> {
   #[inline]
   pub const fn size(&self) -> &S {
     &self.size
+  }
+}
+
+impl<S: ValueSize> ValuePointer<S> {
+  /// Returns the encoded size of the value pointer.
+  #[inline]
+  pub fn encoded_size(&self) -> usize {
+    mem::size_of::<u32>() + self.size.encoded_size() + mem::size_of::<u64>()
   }
 }
 

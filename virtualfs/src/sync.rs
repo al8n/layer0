@@ -1,6 +1,8 @@
+use super::*;
 use std::borrow::Cow;
 
-use super::*;
+/// File implementation based on mmap.
+pub mod mmap;
 
 /// The file abstraction
 pub trait File: Sized + 'static {

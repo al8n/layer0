@@ -7,6 +7,9 @@ use virtualfs::{File, SeekFrom};
 
 use super::*;
 
+/// A write ahead log implementation based on the on disk [`SkipMap`](skl::SkipMap)
+pub mod skiplog;
+
 // mod vlog;
 // use vlog::Vlog;
 
@@ -163,7 +166,7 @@ pub trait ValueLog {
   /// Write a value to the value log.
   ///
   /// Returns a [`ValuePointer`] that can be used to retrieve the value later.
-  fn write(&mut self, value: &[u8]) -> Result<ValuePointer<Self::Id, Self::Size>, Self::Error>;
+  fn write(&mut self, value: &[u8]) -> Result<ValuePointer<Self::Size>, Self::Error>;
 
   /// Flush the value log.
   fn flush(&mut self) -> Result<(), Self::Error>;
@@ -213,12 +216,14 @@ pub trait WiscKey {
   ) -> Result<(), Self::Error>;
 
   /// Read a key from the log.
-  fn read(&self, key: <Self::Wal as Wal>::KeyRef<'_>)
-    -> Result<<Self::Wal as Wal>::EntryRef<'_>, Self::Error>;
+  fn read(
+    &self,
+    key: <Self::Wal as Wal>::KeyRef<'_>,
+  ) -> Result<<Self::Wal as Wal>::EntryRef<'_>, Self::Error>;
 
   /// Read value
   fn read_pointer(
     &self,
-    pointer: ValuePointer<<Self::ValueLog as ValueLog>::Id, <Self::ValueLog as ValueLog>::Size>,
+    pointer: ValuePointer<<Self::ValueLog as ValueLog>::Size>,
   ) -> Result<<Self::ValueLog as ValueLog>::ValueRef<'_>, Self::Error>;
 }
