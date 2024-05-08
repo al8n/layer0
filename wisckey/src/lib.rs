@@ -208,6 +208,41 @@ impl sealed::Sealed for u64 {
   }
 }
 
+/// Value pointer encode/decode error.
+#[derive(Debug, Copy, Clone)]
+pub enum ValuePointerError<S> {
+  /// Buffer is too small to encode the value pointer.
+  BufferTooSmall,
+  /// Value size encode/decode error.
+  ValueSizeError(S),
+  /// Not enough bytes to decode the value pointer.
+  NotEnoughBytes,
+  /// Returned when encoding/decoding varint failed.
+  VarintError(VarintError),
+}
+
+impl<S> From<VarintError> for ValuePointerError<S> {
+  #[inline]
+  fn from(e: VarintError) -> Self {
+    Self::VarintError(e)
+  }
+}
+
+impl<S: core::fmt::Display> core::fmt::Display for ValuePointerError<S> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    match self {
+      Self::BufferTooSmall => write!(f, "encode buffer too small"),
+      Self::ValueSizeError(e) => write!(f, "{e}"),
+      Self::NotEnoughBytes => write!(f, "not enough bytes"),
+      Self::VarintError(e) => write!(f, "{e}"),
+    }
+  }
+}
+
+#[cfg(feature = "std")]
+impl<S: core::fmt::Display + core::fmt::Debug> Error for ValuePointerError<S> {}
+
+/// A pointer to the value in the log.
 pub struct ValuePointer<S = u32> {
   fid: u32,
   size: S,
@@ -238,7 +273,49 @@ impl<S: ValueSize> ValuePointer<S> {
   /// Returns the encoded size of the value pointer.
   #[inline]
   pub fn encoded_size(&self) -> usize {
-    mem::size_of::<u32>() + self.size.encoded_size() + mem::size_of::<u64>()
+    1 + encoded_len_varint(self.fid as u64) + self.size.encoded_size() + encoded_len_varint(self.offset)
+  }
+
+  /// Encodes the value pointer into the buffer.
+  pub fn encode(&self, buf: &mut [u8]) -> Result<usize, ValuePointerError<S::Error>> {
+    let encoded_size = self.encoded_size();
+    if buf.len() < encoded_size {
+      return Err(ValuePointerError::BufferTooSmall);
+    }
+
+    let mut offset = 0;
+    buf[offset] = encoded_size as u8;
+    offset += 1;
+
+    offset += encode_varint(self.offset, &mut buf[offset..])?;
+    offset += self.size.encode(&mut buf[offset..]).map_err(ValuePointerError::ValueSizeError)?;
+    offset += encode_varint(self.fid as u64, &mut buf[offset..])?;
+
+    debug_assert_eq!(encoded_size, offset, "expected encoded size {} is not equal to actual encoded size {}", encoded_size, offset);
+    Ok(offset)
+  }
+
+  /// Decodes the value pointer from the buffer.
+  pub fn decode(buf: &[u8]) -> Result<(usize, Self), ValuePointerError<S::Error>> {
+    if buf.is_empty() {
+      return Err(ValuePointerError::NotEnoughBytes);
+    }
+
+    let encoded_size = buf[0] as usize;
+    if buf.len() < encoded_size {
+      return Err(ValuePointerError::NotEnoughBytes);
+    }
+
+    let mut cur = 1;
+    let (read, fid) = decode_varint(&buf[cur..])?;
+    cur += read;
+    let (read, size) = S::decode(&buf[cur..]).map_err(ValuePointerError::ValueSizeError)?;
+    cur += read;
+    let (read, offset) = decode_varint(&buf[cur..])?;
+    cur += read;
+    debug_assert_eq!(encoded_size, cur, "expected read {} bytes is not equal to actual read bytes {}", encoded_size, cur);
+
+    Ok((encoded_size, Self { fid: fid as u32, size, offset }))
   }
 }
 
