@@ -153,6 +153,15 @@ pub enum Error {
   /// A skip log error occurred.
   #[error(transparent)]
   Log(#[from] skl::map::Error),
+  /// Returned when writing the batch failed.
+  #[error("failed to write batch at index {idx}: {source}")]
+  WriteBatch {
+    /// The index of the key-value pair that caused the error.
+    idx: usize,
+    /// The error that caused the failure.
+    #[source]
+    source: skl::map::Error,
+  },
 }
 
 /// A write-ahead log based on on-disk [`SkipMap`].
@@ -246,13 +255,16 @@ impl<C: Comparator> SkipLog<C> {
 
   /// Inserts a batch of key-value pairs to the skip log.
   /// 
-  /// ## Note
+  /// ## Warning
   /// This method does not guarantee atomicity, which means that if the method fails in the middle of writing the batch,
   /// some of the key-value pairs may be written to the skip log.
   #[inline]
-  pub fn write_batch<'a>(&'a self, batch: impl Iterator<Item = (Meta, &'a [u8], &'a [u8])>) -> Result<(), Error> {
-    for (meta, key, value) in batch {
-      self.map.insert(meta, key, value)?;
+  pub fn insert_many(&self, batch: &[Entry]) -> Result<(), Error> {
+    for (idx, ent) in batch.iter().enumerate() {
+      self.map.insert(ent.meta, &ent.key, &ent.value).map_err(|e| Error::WriteBatch {
+        idx,
+        source: e,
+      })?;
     }
 
     if self.sync_on_write {
@@ -301,6 +313,38 @@ impl<'a> EntryRef<'a> {
   }
 }
 
+/// An entry in the skip log.
+pub struct Entry {
+  key: Bytes,
+  value: Bytes,
+  meta: Meta,
+}
+
+impl Entry {
+  /// Create a new entry with the given key, value, and metadata.
+  #[inline]
+  pub const fn new(key: Bytes, value: Bytes, meta: Meta) -> Self {
+    Self { key, value, meta }
+  }
+
+  /// Returns the key of the entry.
+  #[inline]
+  pub const fn key(&self) -> &Bytes {
+    &self.key
+  }
+
+  /// Returns the value of the entry.
+  #[inline]
+  pub const fn value(&self) -> &Bytes {
+    &self.value
+  }
+
+  /// Returns the metadata of the entry.
+  #[inline]
+  pub const fn meta(&self) -> Meta {
+    self.meta
+  }
+}
 
 // pub struct SkipLogIterator<'a, C> {
 //   iter: skl::map::MapIterator<'a, Meta, C>,
