@@ -12,8 +12,14 @@ extern crate std;
 extern crate alloc as std;
 
 use core::mem;
+
 #[cfg(feature = "std")]
 pub use std::error::Error;
+
+use skl::Trailer;
+
+/// Wisckey implementation for key-value database based on bitcask
+pub mod bitcask;
 
 #[cfg(not(feature = "std"))]
 pub trait Error: core::fmt::Debug + core::fmt::Display {}
@@ -22,6 +28,79 @@ pub trait Error: core::fmt::Debug + core::fmt::Display {}
 impl<T: core::fmt::Debug + core::fmt::Display> Error for T {}
 
 const MAX_ENCODED_VALUE_POINTER_SIZE: usize = mem::size_of::<u32>() + 10 + mem::size_of::<u64>();
+
+/// The metadata for the skip log.
+///
+/// The metadata is a 64-bit value with the following layout:
+///
+/// ```text
+/// +----------------------+--------------------------------+---------------------------+
+/// | 62 bits for version  |  1 bit for value pointer mark  |  1 bit for deletion mark  |
+/// +----------------------+--------------------------------+---------------------------+
+/// ```
+#[derive(Copy, Clone, Eq, PartialEq)]
+#[repr(transparent)]
+pub struct Meta {
+  /// 62 bits for version, 1 bit for value pointer mark, and 1 bit for deletion flag.
+  meta: u64,
+}
+
+impl core::fmt::Debug for Meta {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    f.debug_struct("Meta")
+      .field("version", &self.version())
+      .field("removed", &self.is_removed())
+      .field("pointer", &self.is_pointer())
+      .finish()
+  }
+}
+
+impl Trailer for Meta {
+  #[inline]
+  fn version(&self) -> u64 {
+    self.meta & Self::VERSION_MASK
+  }
+}
+
+impl Meta {
+  const VERSION_MASK: u64 = 0x3FFFFFFFFFFFFFFF; // 62 bits for version
+  const VALUE_POINTER_FLAG: u64 = 1 << 62; // 63rd bit for value pointer mark
+  const REMOVED_FLAG: u64 = 1 << 63; // 64th bit for removed mark
+
+  /// Create a new metadata with the given version.
+  #[inline]
+  pub const fn new(version: u64) -> Self {
+    assert!(version < Self::VERSION_MASK, "version is too large");
+
+    Self { meta: version }
+  }
+
+  /// Create a new metadata with the given version and removed flag.
+  #[inline]
+  pub const fn removed(mut version: u64) -> Self {
+    version |= Self::REMOVED_FLAG;
+    Self { meta: version }
+  }
+
+  /// Create a new metadata with the given version and value pointer flag.
+  #[inline]
+  pub const fn pointer(mut version: u64) -> Self {
+    version |= Self::VALUE_POINTER_FLAG;
+    Self { meta: version }
+  }
+
+  /// Returns `true` if the entry is removed.
+  #[inline]
+  pub const fn is_removed(&self) -> bool {
+    self.meta & Self::REMOVED_FLAG != 0
+  }
+
+  /// Returns `true` if the value of entry is a value pointer.
+  #[inline]
+  pub const fn is_pointer(&self) -> bool {
+    self.meta & Self::VALUE_POINTER_FLAG != 0
+  }
+}
 
 /// From usize
 pub trait FromUsize: Sized {

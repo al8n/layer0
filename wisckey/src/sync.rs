@@ -7,9 +7,6 @@ use virtualfs::{File, SeekFrom};
 
 use super::*;
 
-/// A write ahead log implementation based on the on disk [`SkipMap`](skl::SkipMap)
-pub mod skiplog;
-
 // mod vlog;
 // use vlog::Vlog;
 
