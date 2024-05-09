@@ -273,7 +273,9 @@ impl<S: ValueSize> ValuePointer<S> {
   /// Returns the encoded size of the value pointer.
   #[inline]
   pub fn encoded_size(&self) -> usize {
-    1 + encoded_len_varint(self.fid as u64) + self.size.encoded_size() + encoded_len_varint(self.offset)
+    1 + encoded_len_varint(self.fid as u64)
+      + self.size.encoded_size()
+      + encoded_len_varint(self.offset)
   }
 
   /// Encodes the value pointer into the buffer.
@@ -288,10 +290,17 @@ impl<S: ValueSize> ValuePointer<S> {
     offset += 1;
 
     offset += encode_varint(self.offset, &mut buf[offset..])?;
-    offset += self.size.encode(&mut buf[offset..]).map_err(ValuePointerError::ValueSizeError)?;
+    offset += self
+      .size
+      .encode(&mut buf[offset..])
+      .map_err(ValuePointerError::ValueSizeError)?;
     offset += encode_varint(self.fid as u64, &mut buf[offset..])?;
 
-    debug_assert_eq!(encoded_size, offset, "expected encoded size {} is not equal to actual encoded size {}", encoded_size, offset);
+    debug_assert_eq!(
+      encoded_size, offset,
+      "expected encoded size {} is not equal to actual encoded size {}",
+      encoded_size, offset
+    );
     Ok(offset)
   }
 
@@ -313,9 +322,20 @@ impl<S: ValueSize> ValuePointer<S> {
     cur += read;
     let (read, offset) = decode_varint(&buf[cur..])?;
     cur += read;
-    debug_assert_eq!(encoded_size, cur, "expected read {} bytes is not equal to actual read bytes {}", encoded_size, cur);
+    debug_assert_eq!(
+      encoded_size, cur,
+      "expected read {} bytes is not equal to actual read bytes {}",
+      encoded_size, cur
+    );
 
-    Ok((encoded_size, Self { fid: fid as u32, size, offset }))
+    Ok((
+      encoded_size,
+      Self {
+        fid: fid as u32,
+        size,
+        offset,
+      },
+    ))
   }
 }
 

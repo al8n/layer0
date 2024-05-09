@@ -1,10 +1,12 @@
 use super::*;
-use core::cell::RefCell;
+use core::{cell::RefCell, ops::Bound};
 use std::io;
 
-use skl::{SkipMap, Trailer, map::EntryRef as MapEntryRef};
+use skl::{map::EntryRef as MapEntryRef, SkipMap, Trailer};
 
-pub use skl::{Ascend, Comparator, Descend};
+pub use skl::{Ascend, Comparator, Descend, OccupiedValue};
+
+pub use either::Either;
 
 const EXTENSION: &str = "skl";
 
@@ -241,15 +243,35 @@ impl<C: Comparator> SkipLog<C> {
 
   /// Inserts the given key and value to the skip log.
   #[inline]
-  pub fn insert(&self, meta: Meta, key: &[u8], value: &[u8]) -> Result<(), Error> {
+  pub fn insert<'a, 'b: 'a>(&'a self, meta: Meta, key: &'b [u8], value: &'b [u8]) -> Result<Option<EntryRef<'a, C>>, Error> {
     match self.map.insert(meta, key, value) {
-      Ok(_) => {
+      Ok(ent) => {
         if self.sync_on_write {
           self.flush()?;
         }
-        Ok(())
+        Ok(ent.map(EntryRef::new))
       },
       Err(e) => Err(Error::Log(e)),
+    }
+  }
+
+  /// Inserts a new key if it does not yet exist. Returns `Ok(())` if the key was successfully inserted.
+  ///
+  /// This method is useful when you want to insert a key and you know the value size but you do not have the value
+  /// at this moment.
+  ///
+  /// A placeholder value will be inserted first, then you will get an [`OccupiedValue`],
+  /// and you must fully fill the value with bytes later in the closure.
+  #[inline]
+  pub fn insert_with<'a, 'b: 'a, E>(&'a self, meta: Meta, key: &'b [u8], value_size: u32, f: impl FnOnce(OccupiedValue<'a>) -> Result<(), E>) -> Result<Option<EntryRef<'a, C>>, Either<E, Error>> {
+    match self.map.insert_with(meta, key, value_size, f) {
+      Ok(ent) => {
+        if self.sync_on_write {
+          self.flush().map_err(|e| Either::Right(e.into()))?;
+        }
+        Ok(ent.map(EntryRef::new))
+      },
+      Err(e) => Err(e.map_right(Error::Log)),
     }
   }
 
@@ -276,7 +298,7 @@ impl<C: Comparator> SkipLog<C> {
 
   /// Gets the value associated with the given key.
   #[inline]
-  pub fn get<'a, 'b: 'a>(&'a self, version: u64, key: &'b [u8]) -> Option<MapEntryRef<'a, Meta>> {
+  pub fn get<'a, 'b: 'a>(&'a self, version: u64, key: &'b [u8]) -> Option<MapEntryRef<'a, Meta, C>> {
     self.map.get(version, key).and_then(|ent| {
       if ent.trailer().is_removed() {
         None
@@ -289,11 +311,11 @@ impl<C: Comparator> SkipLog<C> {
 
 /// A reference to an entry in the skip log.
 #[derive(Debug, Copy, Clone)]
-pub struct EntryRef<'a> {
-  ent: MapEntryRef<'a, Meta>,
+pub struct EntryRef<'a, C> {
+  ent: MapEntryRef<'a, Meta, C>,
 }
 
-impl<'a> EntryRef<'a> {
+impl<'a, C> EntryRef<'a, C> {
   /// Returns the key of the entry.
   #[inline]
   pub const fn key(&self) -> &[u8] {
@@ -310,6 +332,11 @@ impl<'a> EntryRef<'a> {
   #[inline]
   pub const fn is_pointer(&self) -> bool {
     self.ent.trailer().is_pointer()
+  }
+
+  #[inline]
+  const fn new(ent: MapEntryRef<'a, Meta, C>) -> Self {
+    Self { ent }
   }
 }
 
@@ -346,17 +373,102 @@ impl Entry {
   }
 }
 
-// pub struct SkipLogIterator<'a, C> {
-//   iter: skl::map::MapIterator<'a, Meta, C>,
-// }
+#[derive(Clone, Copy)]
+pub struct SkipLogIterator<'a, C> {
+  iter: skl::map::MapIterator<'a, Meta, C>,
+  all_versions: bool,
+}
 
-// impl<'a, C: Comparator> Iterator for SkipLogIterator<'a, C> {
-//   type Item = EntryRef<'a>;
+impl<'a, C: Comparator> Iterator for SkipLogIterator<'a, C> {
+  type Item = EntryRef<'a, C>;
 
-//   fn next(&mut self) -> Option<Self::Item> {
-//     self.iter.next().map(|ent| EntryRef { ent })
-//   }
-// }
+  fn next(&mut self) -> Option<Self::Item> {
+    if self.all_versions {
+      return self.iter.next().map(EntryRef::new);
+    }
+
+
+    loop {
+      match self.iter.next() {
+        Some(ent) if !ent.trailer().is_removed() => return Some(EntryRef::new(ent)),
+        None => return None,
+        _ => {},
+      }
+    }
+  }
+}
+
+impl<'a, C: Comparator> DoubleEndedIterator for SkipLogIterator<'a, C> {
+  fn next_back(&mut self) -> Option<EntryRef<'a, C>> {
+    if self.all_versions {
+      return self.iter.next_back().map(EntryRef::new);
+    }
+
+    loop {
+      match self.iter.next_back() {
+        Some(ent) if !ent.trailer().is_removed() => return Some(EntryRef::new(ent)),
+        None => return None,
+        _ => {},
+      }
+    }
+  }
+}
+
+impl<'a, C: Comparator> SkipLogIterator<'a, C> {
+  /// Moves the iterator to the highest element whose key is below the given bound.
+  /// If no such element is found then `None` is returned.
+  pub fn seek_upper_bound(&mut self, upper: Bound<&[u8]>) -> Option<EntryRef<'a, C>> {
+    if self.all_versions {
+      return self.iter.seek_upper_bound(upper).map(EntryRef::new);
+    }
+
+    match self.iter.seek_upper_bound(upper) {
+      Some(ent) if !ent.trailer().is_removed() => {
+        return Some(EntryRef::new(ent));
+      },
+      None => None,
+      _ => {
+        loop {
+          match self.iter.next_back() {
+            Some(ent) if !ent.trailer().is_removed() => return Some(EntryRef::new(ent)),
+            None => return None,
+            _ => {},
+          }
+        }
+      },
+    }
+  }
+
+  /// Moves the iterator to the highest element whose key is below the given bound.
+  /// If no such element is found then `None` is returned.
+  pub fn seek_lower_bound(&mut self, lower: Bound<&[u8]>) -> Option<EntryRef<'a, C>> {
+    if self.all_versions {
+      return self.iter.seek_lower_bound(lower).map(EntryRef::new);
+    }
+
+    match self.iter.seek_lower_bound(lower) {
+      Some(ent) if !ent.trailer().is_removed() => {
+        return Some(EntryRef::new(ent));
+      },
+      None => None,
+      _ => {
+        loop {
+          match self.iter.next() {
+            Some(ent) if !ent.trailer().is_removed() => return Some(EntryRef::new(ent)),
+            None => return None,
+            _ => {},
+          }
+        }
+      },
+    }
+  }
+
+  /// Returns the entry at the current position of the iterator.
+  #[inline]
+  pub fn entry(&self) -> Option<EntryRef<'a, C>> {
+    self.iter.entry().map(|e| EntryRef::new(*e))
+  }
+}
 
 
 #[cfg(test)]
