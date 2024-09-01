@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "virtualfs",
+  "dbutils",
 ]
 resolver = "2"
 
