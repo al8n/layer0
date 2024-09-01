@@ -10,6 +10,8 @@ extern crate std;
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 extern crate alloc as std;
 
+pub use cheap_clone::CheapClone;
+
 use core::{
   cmp,
   ops::{Bound, RangeBounds},
