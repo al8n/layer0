@@ -75,7 +75,10 @@ impl Comparator for Ascend {
 
   #[inline]
   fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
-    (start_bound, end_bound).contains(&key)
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<&[u8]>>::contains::<&[u8]>(
+      &(start_bound, end_bound),
+      &key,
+    )
   }
 }
 
@@ -91,7 +94,10 @@ impl Comparator for Descend {
 
   #[inline]
   fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
-    (start_bound, end_bound).contains(&key)
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<&[u8]>>::contains::<&[u8]>(
+      &(start_bound, end_bound),
+      &key,
+    )
   }
 }
 
@@ -99,4 +105,29 @@ impl Comparator for Descend {
 pub trait Checksumer {
   /// Calculate the checksum of the buffer.
   fn checksum(buf: &[u8]) -> u64;
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_desc() {
+    let desc = Descend;
+    assert_eq!(desc.compare(b"abc", b"def"), cmp::Ordering::Greater);
+    assert_eq!(desc.compare(b"def", b"abc"), cmp::Ordering::Less);
+    assert_eq!(desc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
+
+    assert!(desc.contains(Bound::Included(b"a"), Bound::Excluded(b"d"), b"b"));
+  }
+
+  #[test]
+  fn test_asc() {
+    let asc = Ascend;
+    assert_eq!(asc.compare(b"abc", b"def"), cmp::Ordering::Less);
+    assert_eq!(asc.compare(b"def", b"abc"), cmp::Ordering::Greater);
+    assert_eq!(asc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
+
+    assert!(asc.contains(Bound::Included(b"a"), Bound::Excluded(b"d"), b"b"));
+  }
 }
