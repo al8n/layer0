@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.3.2"
+version = "0.3.3"
 repository.workspace = true
 edition.workspace = true
 rust-version = "1.56.0"
@@ -13,12 +13,19 @@ description = "Utils for developing database"
 [features]
 default = ["std"]
 alloc = ["cheap-clone/alloc"]
-std = ["cheap-clone/default"]
+std = ["cheap-clone/default", "crc32fast?/std", "xxhash-rust?/std"]
 
 bytes = ["cheap-clone/bytes"]
 either = ["cheap-clone/either"]
 smol_str = ["cheap-clone/smol_str"]
 faststr = ["cheap-clone/faststr"]
 
+xxhash64 = ["xxhash-rust/xxh64"]
+xxhash3 = ["xxhash-rust/xxh3"]
+
+
 [dependencies]
 cheap-clone = { version = "0.1", default-features = false }
+
+crc32fast = { version = "1", optional = true, default-features = false }
+xxhash-rust = { version = "0.8", optional = true, default-features = false }
