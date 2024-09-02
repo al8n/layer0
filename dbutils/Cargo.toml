@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.3.3"
+version = "0.3.4"
 repository.workspace = true
 edition.workspace = true
 rust-version = "1.56.0"
@@ -20,6 +20,7 @@ either = ["cheap-clone/either"]
 smol_str = ["cheap-clone/smol_str"]
 faststr = ["cheap-clone/faststr"]
 
+crc32 = ["crc32fast"]
 xxhash64 = ["xxhash-rust/xxh64"]
 xxhash3 = ["xxhash-rust/xxh3"]
 

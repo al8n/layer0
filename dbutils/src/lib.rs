@@ -82,6 +82,8 @@ impl Comparator for Ascend {
   }
 }
 
+impl CheapClone for Ascend {}
+
 /// Descend is a comparator that compares byte slices in descending order.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Descend;
@@ -100,6 +102,8 @@ impl Comparator for Descend {
     )
   }
 }
+
+impl CheapClone for Descend {}
 
 /// Checksumer trait.
 pub trait Checksumer {
@@ -120,6 +124,9 @@ impl Checksumer for Crc32 {
     crc32fast::hash(buf) as u64
   }
 }
+
+#[cfg(feature = "crc32fast")]
+impl CheapClone for Crc32 {}
 
 /// XxHash checksumer.
 #[cfg(feature = "xxhash64")]
@@ -150,6 +157,9 @@ impl Checksumer for XxHash64 {
   }
 }
 
+#[cfg(feature = "xxhash64")]
+impl CheapClone for XxHash64 {}
+
 /// XxHash64 (with xxh3 support) checksumer.
 #[cfg(feature = "xxhash3")]
 #[cfg_attr(docsrs, doc(cfg(feature = "xxhash3")))]
@@ -178,6 +188,9 @@ impl Checksumer for XxHash3 {
     xxhash_rust::xxh3::xxh3_64_with_seed(buf, self.0)
   }
 }
+
+#[cfg(feature = "xxhash3")]
+impl CheapClone for XxHash3 {}
 
 #[cfg(test)]
 mod tests {
