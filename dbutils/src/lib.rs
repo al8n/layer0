@@ -10,6 +10,9 @@ extern crate std;
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 extern crate alloc as std;
 
+mod checksumer;
+pub use checksumer::*;
+
 pub use cheap_clone::CheapClone;
 
 use core::{
@@ -104,93 +107,6 @@ impl Comparator for Descend {
 }
 
 impl CheapClone for Descend {}
-
-/// Checksumer trait.
-pub trait Checksumer {
-  /// Calculate the checksum of the buffer.
-  fn checksum(&self, buf: &[u8]) -> u64;
-}
-
-/// CRC32 checksumer.
-#[cfg(feature = "crc32fast")]
-#[cfg_attr(docsrs, doc(cfg(feature = "crc32fast")))]
-#[derive(Default, Debug, Copy, Clone)]
-pub struct Crc32;
-
-#[cfg(feature = "crc32fast")]
-impl Checksumer for Crc32 {
-  #[inline]
-  fn checksum(&self, buf: &[u8]) -> u64 {
-    crc32fast::hash(buf) as u64
-  }
-}
-
-#[cfg(feature = "crc32fast")]
-impl CheapClone for Crc32 {}
-
-/// XxHash checksumer.
-#[cfg(feature = "xxhash64")]
-#[cfg_attr(docsrs, doc(cfg(feature = "xxhash64")))]
-#[derive(Default, Debug, Copy, Clone)]
-pub struct XxHash64(u64);
-
-#[cfg(feature = "xxhash64")]
-impl XxHash64 {
-  /// Create a new XxHash64 with seed 0.
-  #[inline]
-  pub const fn new() -> Self {
-    Self(0)
-  }
-
-  /// Create a new XxHash64 with a seed.
-  #[inline]
-  pub const fn with_seed(seed: u64) -> Self {
-    Self(seed)
-  }
-}
-
-#[cfg(feature = "xxhash64")]
-impl Checksumer for XxHash64 {
-  #[inline]
-  fn checksum(&self, buf: &[u8]) -> u64 {
-    xxhash_rust::xxh64::xxh64(buf, self.0)
-  }
-}
-
-#[cfg(feature = "xxhash64")]
-impl CheapClone for XxHash64 {}
-
-/// XxHash64 (with xxh3 support) checksumer.
-#[cfg(feature = "xxhash3")]
-#[cfg_attr(docsrs, doc(cfg(feature = "xxhash3")))]
-#[derive(Default, Debug, Copy, Clone)]
-pub struct XxHash3(u64);
-
-#[cfg(feature = "xxhash3")]
-impl XxHash3 {
-  /// Create a new XxHash64 with seed 0.
-  #[inline]
-  pub const fn new() -> Self {
-    Self(0)
-  }
-
-  /// Create a new XxHash64 with a seed.
-  #[inline]
-  pub const fn with_seed(seed: u64) -> Self {
-    Self(seed)
-  }
-}
-
-#[cfg(feature = "xxhash3")]
-impl Checksumer for XxHash3 {
-  #[inline]
-  fn checksum(&self, buf: &[u8]) -> u64 {
-    xxhash_rust::xxh3::xxh3_64_with_seed(buf, self.0)
-  }
-}
-
-#[cfg(feature = "xxhash3")]
-impl CheapClone for XxHash3 {}
 
 #[cfg(test)]
 mod tests {
