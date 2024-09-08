@@ -1,0 +1,15 @@
+[submodule "skl"]
+	path = skl
+	url = https://github.com/al8n/skl.git
+[submodule "aol"]
+	path = aol
+	url = https://github.com/al8n/aol.git
+[submodule "orderwal"]
+	path = orderwal
+	url = https://github.com/al8n/orderwal.git
+[submodule "cheap-clone"]
+	path = cheap-clone
+	url = https://github.com/al8n/cheap-clone.git
+[submodule "rarena"]
+	path = rarena
+	url = https://github.com/al8n/rarena.git
