@@ -13,6 +13,9 @@ extern crate alloc as std;
 mod checksumer;
 pub use checksumer::*;
 
+/// LEB128 encoding and decoding
+pub mod leb128;
+
 pub use cheap_clone::CheapClone;
 
 use core::{
