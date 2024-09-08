@@ -1,3 +1,4 @@
+const MAX_U128_LEB128: usize = 19;
 const MAX_U64_LEB128: usize = 10;
 const MAX_U32_LEB128: usize = 5;
 const MAX_U16_LEB128: usize = 3;
@@ -43,6 +44,24 @@ macro_rules! decode_varint {
   }};
 }
 
+macro_rules! encode_varint {
+  ($buf:ident[$x:ident]) => {{
+    let mut i = 0;
+
+    while $x >= 0x80 {
+      if i >= $buf.len() {
+        return Err(EncodeVarintError::BufferTooSmall);
+      }
+
+      $buf[i] = ($x as u8) | 0x80;
+      $x >>= 7;
+      i += 1;
+    }
+    $buf[i] = $x as u8;
+    Ok(i + 1)
+  }};
+}
+
 /// Returns the encoded length of the value in LEB128 variable length format.
 /// The returned value will be between 1 and 10, inclusive.
 #[inline]
@@ -73,34 +92,35 @@ impl core::fmt::Display for EncodeVarintError {
 #[cfg(feature = "std")]
 impl std::error::Error for EncodeVarintError {}
 
+/// Encodes an `u128` value into LEB128 variable length format, and writes it to the buffer.
+#[inline]
+pub fn encode_u128_varint(mut x: u128, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+  encode_varint!(buf[x])
+}
+
 /// Encodes an `u64` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
 pub fn encode_u64_varint(mut x: u64, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
-  let mut i = 0;
-
-  while x >= 0x80 {
-    if i >= buf.len() {
-      return Err(EncodeVarintError::BufferTooSmall);
-    }
-
-    buf[i] = (x as u8) | 0x80;
-    x >>= 7;
-    i += 1;
-  }
-  buf[i] = x as u8;
-  Ok(i + 1)
+  encode_varint!(buf[x])
 }
 
 /// Encodes an `u32` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_u32_varint(x: u32, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
-  encode_u64_varint(x as u64, buf)
+pub fn encode_u32_varint(mut x: u32, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+  encode_varint!(buf[x])
 }
 
 /// Encodes an `u16` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_u16_varint(x: u16, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
-  encode_u64_varint(x as u64, buf)
+pub fn encode_u16_varint(mut x: u16, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+  encode_varint!(buf[x])
+}
+
+/// Encodes an `i128` value into LEB128 variable length format, and writes it to the buffer.
+#[inline]
+pub fn encode_i128_varint(x: i128, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+  let x = (x << 1) ^ (x >> 127); // Zig-zag encoding
+  encode_u128_varint(x as u128, buf)
 }
 
 /// Encodes an `i64` value into LEB128 variable length format, and writes it to the buffer.
@@ -145,6 +165,22 @@ impl core::fmt::Display for DecodeVarintError {
 
 #[cfg(feature = "std")]
 impl std::error::Error for DecodeVarintError {}
+
+/// Decodes a value from LEB128 variable length format.
+///
+/// # Arguments
+///
+/// * `buf` - A byte slice containing the LEB128 encoded value.
+///
+/// # Returns
+///
+/// * Returns the bytes readed and the decoded value as `u128` if successful.
+///
+/// * Returns [`DecodeVarintError`] if the buffer did not contain a valid LEB128 encoding
+///   or the decode buffer did not contain enough bytes to decode a value.
+pub const fn decode_u128_varint(buf: &[u8]) -> Result<(usize, u128), DecodeVarintError> {
+  decode_varint!(|buf| u128::MAX_U128_LEB128)
+}
 
 /// Decodes a value from LEB128 variable length format.
 ///
@@ -242,6 +278,23 @@ pub fn decode_i32_varint(buf: &[u8]) -> Result<(usize, i32), DecodeVarintError> 
 pub fn decode_i64_varint(buf: &[u8]) -> Result<(usize, i64), DecodeVarintError> {
   let (bytes_read, value) = decode_u64_varint(buf)?;
   let value = ((value >> 1) as i64) ^ { -((value & 1) as i64) }; // Zig-zag decoding
+  Ok((bytes_read, value))
+}
+
+/// Decodes a value from LEB128 variable length format.
+///
+/// # Arguments
+///
+/// * `buf` - A byte slice containing the LEB128 encoded value.
+///
+/// # Returns
+///
+/// * Returns the bytes readed and the decoded value as `i128` if successful.
+///
+/// * Returns [`DecodeVarintError`] if the buffer did not contain a valid LEB128 encoding
+pub fn decode_i128_varint(buf: &[u8]) -> Result<(usize, i128), DecodeVarintError> {
+  let (bytes_read, value) = decode_u128_varint(buf)?;
+  let value = ((value >> 1) as i128) ^ { -((value & 1) as i128) }; // Zig-zag decoding
   Ok((bytes_read, value))
 }
 
@@ -480,6 +533,26 @@ mod tests {
 
   #[rstest]
   #[case::n_0(vec![0], Ok((1, 0)))]
+  #[case::n_1(vec![1], Ok((1, 1)))]
+  #[case::n_129(vec![0x81, 1], Ok((2, 129)))]
+  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, u128::MAX)))]
+  #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  fn test_u128(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, u128), DecodeVarintError>) {
+    let mut bytes = bytes;
+    let buf: &[u8] = &mut bytes;
+    assert_eq!(expected, decode_u128_varint(buf));
+
+    if let Ok((_, n)) = expected {
+      let mut write_buf = vec![0; MAX_U128_LEB128];
+      let written = encode_u128_varint(n, &mut write_buf).unwrap();
+      assert_eq!(bytes, &write_buf[..written]);
+    }
+  }
+
+  #[rstest]
+  #[case::n_0(vec![0], Ok((1, 0)))]
   #[case::n_1(vec![2], Ok((1, 1)))]
   #[case::n_128(vec![0x80, 0x2], Ok((2, 128)))]
   #[case::minus_1(vec![0x1], Ok((1, -1)))]
@@ -549,6 +622,31 @@ mod tests {
     if let Ok((_, n)) = expected {
       let mut write_buf = vec![0; MAX_U64_LEB128];
       let written = encode_i64_varint(n, &mut write_buf).unwrap();
+      assert_eq!(bytes, &write_buf[..written]);
+    }
+  }
+
+  #[rstest]
+  #[case::n_0(vec![0], Ok((1, 0)))]
+  #[case::n_1(vec![2], Ok((1, 1)))]
+  #[case::n_128(vec![0x80, 0x2], Ok((2, 128)))]
+  #[case::minus_1(vec![0x1], Ok((1, -1)))]
+  #[case::minus_129(vec![0x1], Ok((1, -1)))]
+  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, i128::MAX)))]
+  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, -i128::MAX)))]
+  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, i128::MIN)))]
+  #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
+  #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  fn test_i128(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, i128), DecodeVarintError>) {
+    let mut bytes = bytes;
+    let buf: &[u8] = &mut bytes;
+    assert_eq!(expected, decode_i128_varint(buf));
+
+    if let Ok((_, n)) = expected {
+      let mut write_buf = vec![0; MAX_U128_LEB128];
+      let written = encode_i128_varint(n, &mut write_buf).unwrap();
       assert_eq!(bytes, &write_buf[..written]);
     }
   }
