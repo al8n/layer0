@@ -16,6 +16,12 @@ pub use checksumer::*;
 /// LEB128 encoding and decoding
 pub mod leb128;
 
+/// A vacant buffer that can be filled with bytes.
+pub mod buffer;
+
+#[doc(inline)]
+pub use equivalent;
+
 pub use cheap_clone::CheapClone;
 
 use core::{

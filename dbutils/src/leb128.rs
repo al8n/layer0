@@ -67,12 +67,65 @@ macro_rules! encode_varint {
 }
 
 /// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 19, inclusive.
+#[inline]
+pub const fn encoded_u128_varint_len(value: u128) -> usize {
+  // Based on [VarintSize64][1].
+  // [1]: https://github.com/google/protobuf/blob/3.3.x/src/google/protobuf/io/coded_stream.h#L1301-L1309
+  ((((value | 1).leading_zeros() ^ 127) * 9 + 73) / 64) as usize
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
 /// The returned value will be between 1 and 10, inclusive.
 #[inline]
-pub const fn encoded_len_varint(value: u64) -> usize {
+pub const fn encoded_u64_varint_len(value: u64) -> usize {
   // Based on [VarintSize64][1].
   // [1]: https://github.com/google/protobuf/blob/3.3.x/src/google/protobuf/io/coded_stream.h#L1301-L1309
   ((((value | 1).leading_zeros() ^ 63) * 9 + 73) / 64) as usize
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 5, inclusive.
+#[inline]
+pub const fn encoded_u32_varint_len(value: u32) -> usize {
+  encoded_u64_varint_len(value as u64)
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 3, inclusive.
+#[inline]
+pub const fn encoded_u16_varint_len(value: u16) -> usize {
+  encoded_u64_varint_len(value as u64)
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 19, inclusive.
+#[inline]
+pub const fn encoded_i128_varint_len(x: i128) -> usize {
+  let x = (x << 1) ^ (x >> 127); // Zig-zag encoding; // Zig-zag decoding;
+  encoded_u128_varint_len(x as u128)
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 10, inclusive.
+#[inline]
+pub const fn encoded_i64_varint_len(x: i64) -> usize {
+  let x = (x << 1) ^ (x >> 63); // Zig-zag encoding
+  encoded_u64_varint_len(x as u64)
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 5, inclusive.
+#[inline]
+pub const fn encoded_i32_varint_len(x: i32) -> usize {
+  encoded_i64_varint_len(x as i64)
+}
+
+/// Returns the encoded length of the value in LEB128 variable length format.
+/// The returned value will be between 1 and 3, inclusive.
+#[inline]
+pub const fn encoded_i16_varint_len(value: i16) -> usize {
+  encoded_i64_varint_len(value as i64)
 }
 
 /// Encoding varint error.
@@ -476,10 +529,10 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![1], Ok((1, 1)))]
-  #[case::n_129(vec![0x81, 1], Ok((2, 129)))]
-  #[case::max         (vec![0xff, 0xff, 0x03], Ok((3, u16::MAX)))]
+  #[case::n_0(vec![0], Ok((encoded_u16_varint_len(0), 0)))]
+  #[case::n_1(vec![1], Ok((encoded_u16_varint_len(1), 1)))]
+  #[case::n_129(vec![0x81, 1], Ok((encoded_u16_varint_len(129), 129)))]
+  #[case::max         (vec![0xff, 0xff, 0x03], Ok((encoded_u16_varint_len(u16::MAX), u16::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
   #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
@@ -496,10 +549,10 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![1], Ok((1, 1)))]
-  #[case::n_129(vec![0x81, 1], Ok((2, 129)))]
-  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0x0f], Ok((5, u32::MAX)))]
+  #[case::n_0(vec![0], Ok((encoded_u32_varint_len(0), 0)))]
+  #[case::n_1(vec![1], Ok((encoded_u32_varint_len(1), 1)))]
+  #[case::n_129(vec![0x81, 1], Ok((encoded_u32_varint_len(129), 129)))]
+  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0x0f], Ok((encoded_u32_varint_len(u32::MAX), u32::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0x10], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
   #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
@@ -516,10 +569,10 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![1], Ok((1, 1)))]
-  #[case::n_129(vec![0x81, 1], Ok((2, 129)))]
-  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((10, u64::MAX)))]
+  #[case::n_0(vec![0], Ok((encoded_u64_varint_len(0), 0)))]
+  #[case::n_1(vec![1], Ok((encoded_u64_varint_len(1), 1)))]
+  #[case::n_129(vec![0x81, 1], Ok((encoded_u64_varint_len(129), 129)))]
+  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((encoded_u64_varint_len(u64::MAX), u64::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
   #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
@@ -536,10 +589,10 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![1], Ok((1, 1)))]
-  #[case::n_129(vec![0x81, 1], Ok((2, 129)))]
-  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, u128::MAX)))]
+  #[case::n_0(vec![0], Ok((encoded_u128_varint_len(0), 0)))]
+  #[case::n_1(vec![1], Ok((encoded_u128_varint_len(1), 1)))]
+  #[case::n_129(vec![0x81, 1], Ok((encoded_u128_varint_len(129), 129)))]
+  #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((encoded_u128_varint_len(u128::MAX), u128::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
   #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
@@ -556,14 +609,13 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![2], Ok((1, 1)))]
-  #[case::n_128(vec![0x80, 0x2], Ok((2, 128)))]
-  #[case::minus_1(vec![0x1], Ok((1, -1)))]
-  #[case::minus_129(vec![0x1], Ok((1, -1)))]
-  #[case::max               (vec![0xfe, 0xff, 0x03], Ok((3, i16::MAX)))]
-  #[case::minus_max         (vec![0xfd, 0xff, 0x03], Ok((3, -i16::MAX)))]
-  #[case::min               (vec![0xff, 0xff, 0x03], Ok((3, i16::MIN)))]
+  #[case::n_0(vec![0], Ok((encoded_i16_varint_len(0), 0)))]
+  #[case::n_1(vec![2], Ok((encoded_i16_varint_len(1), 1)))]
+  #[case::n_128(vec![0x80, 0x2], Ok((encoded_i16_varint_len(128), 128)))]
+  #[case::minus_1(vec![0x1], Ok((encoded_i16_varint_len(-1), -1)))]
+  #[case::max               (vec![0xfe, 0xff, 0x03], Ok((encoded_i16_varint_len(i16::MAX), i16::MAX)))]
+  #[case::minus_max         (vec![0xfd, 0xff, 0x03], Ok((encoded_i16_varint_len(-i16::MAX), -i16::MAX)))]
+  #[case::min               (vec![0xff, 0xff, 0x03], Ok((encoded_i16_varint_len(i16::MIN), i16::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
@@ -581,14 +633,13 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![2], Ok((1, 1)))]
-  #[case::n_128(vec![0x80, 0x2], Ok((2, 128)))]
-  #[case::minus_1(vec![0x1], Ok((1, -1)))]
-  #[case::minus_129(vec![0x1], Ok((1, -1)))]
-  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0x0f], Ok((5, i32::MAX)))]
-  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0x0f], Ok((5, -i32::MAX)))]
-  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0x0f], Ok((5, i32::MIN)))]
+  #[case::n_0(vec![0], Ok((encoded_i32_varint_len(0), 0)))]
+  #[case::n_1(vec![2], Ok((encoded_i32_varint_len(1), 1)))]
+  #[case::n_128(vec![0x80, 0x2], Ok((encoded_i32_varint_len(128), 128)))]
+  #[case::minus_1(vec![0x1], Ok((encoded_i32_varint_len(-1), -1)))]
+  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0x0f], Ok((encoded_i32_varint_len(i32::MAX), i32::MAX)))]
+  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0x0f], Ok((encoded_i32_varint_len(-i32::MAX), -i32::MAX)))]
+  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0x0f], Ok((encoded_i32_varint_len(i32::MIN), i32::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0x10], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0x10], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
@@ -606,14 +657,13 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![2], Ok((1, 1)))]
-  #[case::n_128(vec![0x80, 0x2], Ok((2, 128)))]
-  #[case::minus_1(vec![0x1], Ok((1, -1)))]
-  #[case::minus_129(vec![0x1], Ok((1, -1)))]
-  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((10, i64::MAX)))]
-  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((10, -i64::MAX)))]
-  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((10, i64::MIN)))]
+  #[case::n_0(vec![0], Ok((encoded_i64_varint_len(0), 0)))]
+  #[case::n_1(vec![2], Ok((encoded_i64_varint_len(1), 1)))]
+  #[case::n_128(vec![0x80, 0x2], Ok((encoded_i64_varint_len(128), 128)))]
+  #[case::minus_1(vec![0x1], Ok((encoded_i32_varint_len(-1), -1)))]
+  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((encoded_i64_varint_len(i64::MAX), i64::MAX)))]
+  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((encoded_i64_varint_len(-i64::MAX), -i64::MAX)))]
+  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((encoded_i64_varint_len(i64::MIN), i64::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
@@ -631,14 +681,13 @@ mod tests {
   }
 
   #[rstest]
-  #[case::n_0(vec![0], Ok((1, 0)))]
-  #[case::n_1(vec![2], Ok((1, 1)))]
-  #[case::n_128(vec![0x80, 0x2], Ok((2, 128)))]
-  #[case::minus_1(vec![0x1], Ok((1, -1)))]
-  #[case::minus_129(vec![0x1], Ok((1, -1)))]
-  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, i128::MAX)))]
-  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, -i128::MAX)))]
-  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((19, i128::MIN)))]
+  #[case::n_0(vec![0], Ok((encoded_i128_varint_len(0), 0)))]
+  #[case::n_1(vec![2], Ok((encoded_i128_varint_len(1), 1)))]
+  #[case::n_128(vec![0x80, 0x2], Ok((encoded_i128_varint_len(128), 128)))]
+  #[case::minus_1(vec![0x1], Ok((encoded_i128_varint_len(-1), -1)))]
+  #[case::max               (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((encoded_i128_varint_len(i128::MAX), i128::MAX)))]
+  #[case::minus_max         (vec![0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((encoded_i128_varint_len(-i128::MAX), -i128::MAX)))]
+  #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((encoded_i128_varint_len(i128::MIN), i128::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
