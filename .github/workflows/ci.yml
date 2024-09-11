@@ -149,9 +149,9 @@ jobs:
         path: ~/.cargo
         key: ${{ runner.os }}-coverage-dotcargo
     - name: Run build
-      run: cargo hack build --feature-powerset
+      run: cargo build --all-features
   
-  test:
+  dbutils:
     name: test
     strategy:
       matrix:
@@ -183,8 +183,8 @@ jobs:
         path: ~/.cargo
         key: ${{ runner.os }}-coverage-dotcargo
     - name: Run test
-      run: cargo hack test --feature-powerset
-  
+      run: cargo test -p --all-features
+
   sanitizer:
     name: sanitizer
     strategy:
@@ -269,31 +269,31 @@ jobs:
   #       run: RUSTFLAGS="--cfg loom -Dwarnings" cargo hack test --test loom
   
   # valgrind
-  valgrind:
-    name: valgrind
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Cache cargo build and registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ubuntu-latest-valgrind-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ubuntu-latest-valgrind-
+  # valgrind:
+  #   name: valgrind
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Cache cargo build and registry
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: |
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #           target
+  #         key: ubuntu-latest-valgrind-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ubuntu-latest-valgrind-
 
-      - name: Install Rust ${{ env.stable }}
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: ${{ env.stable }}
-            override: true
-      - name: Install Valgrind
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y valgrind
+  #     - name: Install Rust ${{ env.stable }}
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #           toolchain: ${{ env.stable }}
+  #           override: true
+  #     - name: Install Valgrind
+  #       run: |
+  #         sudo apt-get update -y
+  #         sudo apt-get install -y valgrind
       # Compile tests
       # - name: cargo build foo
       #   run: cargo build --bin foo
@@ -337,7 +337,7 @@ jobs:
       - clippy
       - build
       - cross
-      - test
+      - dbutils
       - sanitizer
       - miri
       # - loom

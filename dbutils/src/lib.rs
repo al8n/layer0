@@ -4,7 +4,7 @@
 #![cfg_attr(docsrs, allow(unused_attributes))]
 #![deny(missing_docs)]
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", test))]
 extern crate std;
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
