@@ -1,4 +1,4 @@
-use super::CheapClone;
+use super::*;
 
 /// Checksumer trait.
 pub trait Checksumer {
