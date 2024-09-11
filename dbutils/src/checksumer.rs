@@ -1,5 +1,3 @@
-use super::*;
-
 /// Checksumer trait.
 pub trait Checksumer {
   /// Create a new fresh checksumer internal and calculate the checksum of the buffer without changing the current state.
@@ -46,7 +44,7 @@ impl Checksumer for Crc32 {
 }
 
 #[cfg(feature = "crc32fast")]
-impl CheapClone for Crc32 {}
+impl super::CheapClone for Crc32 {}
 
 /// XxHash checksumer.
 #[cfg(feature = "xxhash64")]
@@ -102,7 +100,7 @@ impl Checksumer for XxHash64 {
 }
 
 #[cfg(feature = "xxhash64")]
-impl CheapClone for XxHash64 {}
+impl super::CheapClone for XxHash64 {}
 
 /// XxHash64 (with xxh3 support) checksumer.
 #[cfg(feature = "xxhash3")]
@@ -158,4 +156,4 @@ impl Checksumer for XxHash3 {
 }
 
 #[cfg(feature = "xxhash3")]
-impl CheapClone for XxHash3 {}
+impl super::CheapClone for XxHash3 {}
