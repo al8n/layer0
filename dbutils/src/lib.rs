@@ -10,8 +10,8 @@ extern crate std;
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 extern crate alloc as std;
 
-mod checksumer;
-pub use checksumer::*;
+/// Traits and structs for checksuming.
+pub mod checksum;
 
 /// LEB128 encoding and decoding
 pub mod leb128;

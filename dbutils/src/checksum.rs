@@ -1,9 +1,36 @@
+/// A trait for creating instances of [`Checksumer`].
+///
+/// A `BuildChecksumer` is typically used to create
+/// [`Checksumer`]s.
+///
+/// For each instance of `BuildChecksumer`, the [`Checksumer`]s created by
+/// [`build_checksumer`] should be identical. That is, if the same stream of bytes
+/// is fed into each checksumer, the same output will also be generated.
+pub trait BuildChecksumer {
+  /// Type of the checksumer that will be created.
+  type Checksumer: Checksumer;
+
+  /// Creates a new checksumer.
+  ///
+  /// Each call to `build_checksumer` on the same instance should produce identical
+  /// [`Checksumer`]s.
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use dbutils::checksum::{BuildChecksumer, Crc32};
+  ///
+  /// let s = Crc32::new();
+  /// let new_s = s.build_checksumer();
+  /// ```
+  fn build_checksumer(&self) -> Self::Checksumer;
+
+  /// Calculates the checksum of a byte slice.
+  fn checksum_one(&self, src: &[u8]) -> u64;
+}
+
 /// Checksumer trait.
 pub trait Checksumer {
-  /// Create a new fresh checksumer internal and calculate the checksum of the buffer without changing the current state.
-  /// The result is unrelated to the current state.
-  fn checksum(&self, buf: &[u8]) -> u64;
-
   /// Adds chunk of data to checksum.
   fn update(&mut self, buf: &[u8]);
 
@@ -32,11 +59,6 @@ const _: () = {
 
   impl Checksumer for Crc32 {
     #[inline]
-    fn checksum(&self, buf: &[u8]) -> u64 {
-      crc32fast::hash(buf) as u64
-    }
-
-    #[inline]
     fn update(&mut self, buf: &[u8]) {
       self.0.update(buf)
     }
@@ -49,6 +71,20 @@ const _: () = {
     #[inline]
     fn digest(&self) -> u64 {
       self.0.clone().finalize() as u64
+    }
+  }
+
+  impl BuildChecksumer for Crc32 {
+    type Checksumer = Self;
+
+    #[inline]
+    fn build_checksumer(&self) -> Self::Checksumer {
+      Self::new()
+    }
+
+    #[inline]
+    fn checksum_one(&self, src: &[u8]) -> u64 {
+      crc32fast::hash(src) as u64
     }
   }
 
@@ -88,11 +124,6 @@ const _: () = {
 
   impl Checksumer for XxHash64 {
     #[inline]
-    fn checksum(&self, buf: &[u8]) -> u64 {
-      xxhash_rust::xxh64::xxh64(buf, self.seed)
-    }
-
-    #[inline]
     fn reset(&mut self) {
       self.hasher.reset(self.seed)
     }
@@ -105,6 +136,20 @@ const _: () = {
     #[inline]
     fn digest(&self) -> u64 {
       self.hasher.digest()
+    }
+  }
+
+  impl BuildChecksumer for XxHash64 {
+    type Checksumer = Self;
+
+    #[inline]
+    fn build_checksumer(&self) -> Self::Checksumer {
+      Self::with_seed(self.seed)
+    }
+
+    #[inline]
+    fn checksum_one(&self, src: &[u8]) -> u64 {
+      xxhash_rust::xxh64::xxh64(src, self.seed)
     }
   }
 
@@ -144,11 +189,6 @@ const _: () = {
 
   impl Checksumer for XxHash3 {
     #[inline]
-    fn checksum(&self, buf: &[u8]) -> u64 {
-      xxhash_rust::xxh3::xxh3_64_with_seed(buf, self.seed)
-    }
-
-    #[inline]
     fn update(&mut self, buf: &[u8]) {
       self.hasher.update(buf)
     }
@@ -161,6 +201,20 @@ const _: () = {
     #[inline]
     fn digest(&self) -> u64 {
       self.hasher.digest()
+    }
+  }
+
+  impl BuildChecksumer for XxHash3 {
+    type Checksumer = Self;
+
+    #[inline]
+    fn build_checksumer(&self) -> Self::Checksumer {
+      Self::with_seed(self.seed)
+    }
+
+    #[inline]
+    fn checksum_one(&self, src: &[u8]) -> u64 {
+      xxhash_rust::xxh3::xxh3_64_with_seed(src, self.seed)
     }
   }
 
