@@ -39,6 +39,14 @@ pub trait Checksumer {
 
   /// Finalize hashing.
   fn digest(&self) -> u64;
+
+  /// Returns whether the checksumer is parallelizable.
+  ///
+  /// e.g. CRC32 and XXHash64 are parallelizable, but SHA and MD5 are not.
+  #[inline]
+  fn parallelizable(&self) -> bool {
+    false
+  }
 }
 
 /// CRC32 checksumer.
@@ -71,6 +79,11 @@ const _: () = {
     #[inline]
     fn digest(&self) -> u64 {
       self.0.clone().finalize() as u64
+    }
+
+    #[inline]
+    fn parallelizable(&self) -> bool {
+      true
     }
   }
 
@@ -137,6 +150,11 @@ const _: () = {
     fn digest(&self) -> u64 {
       self.hasher.digest()
     }
+
+    #[inline]
+    fn parallelizable(&self) -> bool {
+      true
+    }
   }
 
   impl BuildChecksumer for XxHash64 {
@@ -201,6 +219,11 @@ const _: () = {
     #[inline]
     fn digest(&self) -> u64 {
       self.hasher.digest()
+    }
+
+    #[inline]
+    fn parallelizable(&self) -> bool {
+      true
     }
   }
 
