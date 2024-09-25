@@ -1,6 +1,6 @@
 use core::{
   array::TryFromSliceError,
-  borrow::Borrow,
+  borrow::{Borrow, BorrowMut},
   marker::PhantomData,
   ptr::{self, NonNull},
   slice,
@@ -183,7 +183,7 @@ impl core::fmt::Display for NotEnoughSpace {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(
       f,
-      "buffer does not have enough space (remaining {}, want {})",
+      "vacant buffer does not have enough space (remaining {}, want {})",
       self.remaining, self.want
     )
   }
@@ -204,6 +204,7 @@ pub struct VacantBuffer<'a> {
 
 impl<'a> VacantBuffer<'a> {
   /// Fill the remaining space with the given byte.
+  #[inline]
   pub fn fill(&mut self, byte: u8) {
     if self.cap == 0 {
       return;
@@ -214,6 +215,42 @@ impl<'a> VacantBuffer<'a> {
       ptr::write_bytes(self.value.as_ptr(), byte, self.cap);
     }
     self.len = self.cap;
+  }
+
+  /// Set the length of the vacant buffer.
+  ///
+  /// If the length is greater than the current length, the gap will be filled with zeros.
+  ///
+  /// ## Panics
+  /// - If the length is greater than the capacity.
+  pub fn set_len(&mut self, len: usize) {
+    if len > self.cap {
+      panic!(
+        "buffer does not have enough space (remaining {}, want {})",
+        self.cap - self.len,
+        len
+      );
+    }
+
+    // If the length is greater than the current length, the gap will be filled with zeros.
+    if len > self.len {
+      // SAFETY: the value's ptr is aligned and the cap is the correct.
+      unsafe {
+        ptr::write_bytes(self.value.as_ptr().add(self.len), 0, len - self.len);
+      }
+    }
+
+    // If the length is less than the current length, the buffer will be truncated.
+    if len < self.len {
+      // SAFETY: the value's ptr is aligned and the cap is the correct.
+      unsafe {
+        ptr::write_bytes(self.value.as_ptr().add(len), 0, self.len - len);
+      }
+
+      self.len = len;
+    }
+
+    self.len = len;
   }
 
   /// Put bytes to the vacant value.
@@ -376,6 +413,18 @@ impl<'a> AsRef<[u8]> for VacantBuffer<'a> {
 
 impl<'a> AsMut<[u8]> for VacantBuffer<'a> {
   fn as_mut(&mut self) -> &mut [u8] {
+    self
+  }
+}
+
+impl<'a> Borrow<[u8]> for VacantBuffer<'a> {
+  fn borrow(&self) -> &[u8] {
+    self
+  }
+}
+
+impl<'a> BorrowMut<[u8]> for VacantBuffer<'a> {
+  fn borrow_mut(&mut self) -> &mut [u8] {
     self
   }
 }
