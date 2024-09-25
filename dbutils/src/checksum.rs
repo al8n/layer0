@@ -4,7 +4,7 @@
 /// [`Checksumer`]s.
 ///
 /// For each instance of `BuildChecksumer`, the [`Checksumer`]s created by
-/// [`build_checksumer`] should be identical. That is, if the same stream of bytes
+/// [`build_checksumer`](BuildChecksumer::build_checksumer) should be identical. That is, if the same stream of bytes
 /// is fed into each checksumer, the same output will also be generated.
 pub trait BuildChecksumer {
   /// Type of the checksumer that will be created.

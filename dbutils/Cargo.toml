@@ -13,7 +13,7 @@ description = "Utils for developing database"
 [features]
 default = ["std"]
 alloc = ["cheap-clone/alloc"]
-std = ["cheap-clone/default", "crc32fast?/std", "xxhash-rust?/std"]
+std = ["alloc", "cheap-clone/default", "crc32fast?/std", "xxhash-rust?/std"]
 
 bytes = ["dep:bytes", "cheap-clone/bytes"]
 either = ["cheap-clone/either"]

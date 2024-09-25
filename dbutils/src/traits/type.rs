@@ -31,10 +31,7 @@ impl core::fmt::Display for BufferTooSmall {
 
 impl core::error::Error for BufferTooSmall {}
 
-/// The type trait for limiting the types that can be used as keys and values in the [`GenericOrderWal`](crate::swmr::GenericOrderWal).
-///
-/// This trait and its implementors can only be used with the [`GenericOrderWal`](crate::swmr::GenericOrderWal) type, otherwise
-/// the correctness of the implementations is not guaranteed.
+/// The type trait for limiting the types that can be used as keys and values.
 pub trait Type: core::fmt::Debug {
   /// The reference type for the type.
   type Ref<'a>: TypeRef<'a>;
@@ -52,8 +49,10 @@ pub trait Type: core::fmt::Debug {
 
   /// Encodes the type into a [`Vec<u8>`].
   #[inline]
-  fn encode_into_vec(&self) -> Result<Vec<u8>, Self::Error> {
-    let mut buf = vec![0; self.encoded_len()];
+  #[cfg(any(feature = "alloc", feature = "std"))]
+  #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+  fn encode_into_vec(&self) -> Result<::std::vec::Vec<u8>, Self::Error> {
+    let mut buf = ::std::vec![0; self.encoded_len()];
     self.encode(&mut buf)?;
     Ok(buf)
   }

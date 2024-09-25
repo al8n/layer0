@@ -5,6 +5,7 @@ pub use bytes::*;
 mod string;
 pub use string::Str;
 
+#[cfg(feature = "std")]
 mod net;
 
 impl Type for () {

@@ -1,5 +1,4 @@
 use core::borrow::Borrow;
-use std::{borrow::Cow, sync::Arc};
 
 use ::equivalent::Equivalent;
 
@@ -135,30 +134,6 @@ impl PartialEq<str> for Str<'_> {
   }
 }
 
-impl PartialEq<String> for Str<'_> {
-  fn eq(&self, other: &String) -> bool {
-    self.0 == other
-  }
-}
-
-impl PartialEq<Str<'_>> for String {
-  fn eq(&self, other: &Str<'_>) -> bool {
-    self == other.0
-  }
-}
-
-impl PartialEq<&String> for Str<'_> {
-  fn eq(&self, other: &&String) -> bool {
-    self.0 == *other
-  }
-}
-
-impl PartialEq<Str<'_>> for &String {
-  fn eq(&self, other: &Str<'_>) -> bool {
-    *self == other.0
-  }
-}
-
 impl PartialEq<Str<'_>> for str {
   fn eq(&self, other: &Str<'_>) -> bool {
     self == other.0
@@ -202,13 +177,46 @@ impl PartialOrd<Str<'_>> for &str {
 }
 
 impls! {
-  Cow<'_, str>,
+  #[cfg(feature = "alloc")]
+  ::std::borrow::Cow<'_, str>,
   &'static str,
-  String,
-  Arc<str>,
-  Box<str>,
+  #[cfg(feature = "alloc")]
+  ::std::string::String,
+  #[cfg(feature = "alloc")]
+  ::std::sync::Arc<str>,
+  #[cfg(feature = "alloc")]
+  ::std::boxed::Box<str>,
   #[cfg(feature = "smol_str")]
   ::smol_str::SmolStr,
   #[cfg(feature = "faststr")]
   ::faststr::FastStr,
 }
+
+#[cfg(any(feature = "alloc", feature = "std"))]
+const _: () = {
+  use std::string::String;
+
+  impl PartialEq<String> for Str<'_> {
+    fn eq(&self, other: &String) -> bool {
+      self.0 == other
+    }
+  }
+
+  impl PartialEq<Str<'_>> for String {
+    fn eq(&self, other: &Str<'_>) -> bool {
+      self == other.0
+    }
+  }
+
+  impl PartialEq<&String> for Str<'_> {
+    fn eq(&self, other: &&String) -> bool {
+      self.0 == *other
+    }
+  }
+
+  impl PartialEq<Str<'_>> for &String {
+    fn eq(&self, other: &Str<'_>) -> bool {
+      *self == other.0
+    }
+  }
+};

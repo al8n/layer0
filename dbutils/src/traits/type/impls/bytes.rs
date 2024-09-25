@@ -1,6 +1,5 @@
 use ::equivalent::*;
 use core::borrow::Borrow;
-use std::{borrow::Cow, sync::Arc};
 
 use super::*;
 
@@ -164,40 +163,16 @@ impl PartialEq<SliceRef<'_>> for &[u8] {
   }
 }
 
-impl PartialEq<Vec<u8>> for SliceRef<'_> {
-  #[inline]
-  fn eq(&self, other: &Vec<u8>) -> bool {
-    self.0 == other.as_slice()
-  }
-}
-
-impl PartialEq<&Vec<u8>> for SliceRef<'_> {
-  #[inline]
-  fn eq(&self, other: &&Vec<u8>) -> bool {
-    self.0 == other.as_slice()
-  }
-}
-
-impl PartialEq<SliceRef<'_>> for Vec<u8> {
-  #[inline]
-  fn eq(&self, other: &SliceRef<'_>) -> bool {
-    self.as_slice() == other.0
-  }
-}
-
-impl PartialEq<SliceRef<'_>> for &Vec<u8> {
-  #[inline]
-  fn eq(&self, other: &SliceRef<'_>) -> bool {
-    self.as_slice() == other.0
-  }
-}
-
 impls! {
-  Cow<'_, [u8]>,
+  #[cfg(feature = "alloc")]
+  ::std::borrow::Cow<'_, [u8]>,
   &'static [u8],
-  Vec<u8>,
-  Box<[u8]>,
-  Arc<[u8]>,
+  #[cfg(feature = "alloc")]
+  ::std::vec::Vec<u8>,
+  #[cfg(feature = "alloc")]
+  ::std::boxed::Box<[u8]>,
+  #[cfg(feature = "alloc")]
+  ::std::sync::Arc<[u8]>,
   #[cfg(feature = "bytes")]
   ::bytes::Bytes,
   #[cfg(feature = "smallvec-wrapper")]
@@ -219,6 +194,39 @@ impls! {
   #[cfg(feature = "smallvec-wrapper")]
   ::smallvec_wrapper::XXXLargeVec<u8>,
 }
+
+#[cfg(any(feature = "alloc", feature = "std"))]
+const _: () = {
+  use std::vec::Vec;
+
+  impl PartialEq<Vec<u8>> for SliceRef<'_> {
+    #[inline]
+    fn eq(&self, other: &Vec<u8>) -> bool {
+      self.0 == other.as_slice()
+    }
+  }
+
+  impl PartialEq<&Vec<u8>> for SliceRef<'_> {
+    #[inline]
+    fn eq(&self, other: &&Vec<u8>) -> bool {
+      self.0 == other.as_slice()
+    }
+  }
+
+  impl PartialEq<SliceRef<'_>> for Vec<u8> {
+    #[inline]
+    fn eq(&self, other: &SliceRef<'_>) -> bool {
+      self.as_slice() == other.0
+    }
+  }
+
+  impl PartialEq<SliceRef<'_>> for &Vec<u8> {
+    #[inline]
+    fn eq(&self, other: &SliceRef<'_>) -> bool {
+      self.as_slice() == other.0
+    }
+  }
+};
 
 #[cfg(feature = "smallvec")]
 const _: () = {
