@@ -202,6 +202,19 @@ pub struct VacantBuffer<'a> {
   _m: PhantomData<&'a ()>,
 }
 
+#[cfg(feature = "tracing")]
+impl<'a> Drop for VacantBuffer<'a> {
+  fn drop(&mut self) {
+    let remaining = self.remaining();
+    if remaining > 0 {
+      tracing::warn!(
+        "vacant buffer is not fully filled with bytes (remaining {})",
+        remaining,
+      );
+    }
+  }
+}
+
 impl<'a> VacantBuffer<'a> {
   /// Fill the remaining space with the given byte.
   #[inline]
