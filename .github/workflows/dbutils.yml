@@ -38,7 +38,7 @@ jobs:
       # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
       run: rustup update stable --no-self-update && rustup default stable
     - name: Check formatting
-      run: cargo fmt --all -- --check
+      run: cargo fmt -p dbutils --all -- --check
 
 
   # Apply clippy lints
