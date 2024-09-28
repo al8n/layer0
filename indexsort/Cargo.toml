@@ -1,0 +1,24 @@
+[package]
+name = "indexsort"
+version = "0.1.1"
+edition = "2021"
+repository = "https://github.com/al8n/layer0/tree/main/indexsort"
+license = "MIT OR Apache-2.0"
+description = "Yet another sort crate, porting Golang sort package to Rust."
+keywords = ["sort", "sorting"]
+categories = ["algorithms", "data-structures", "no-std"]
+rust-version = "1.56.0"
+
+[features]
+default = ["alloc"]
+alloc = []
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.4"
+rand = "0.8"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

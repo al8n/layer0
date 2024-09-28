@@ -1,20 +1,21 @@
 [package]
 name = "dbutils"
 version = "0.4.4"
-repository.workspace = true
+repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"
 homepage.workspace = true
 categories.workspace = true
 license.workspace = true
 metadata.workspace = true
-description = "Utils for developing database"
+description = "Utils for developing databases"
 
 [features]
-default = ["std"]
+default = ["std", "cheap-clone/default"]
 alloc = ["cheap-clone/alloc"]
-std = ["alloc", "cheap-clone/default", "crc32fast?/std", "xxhash-rust?/std"]
+std = ["alloc", "cheap-clone/std", "crc32fast?/std", "xxhash-rust?/std"]
 
+among = ["cheap-clone/among"]
 bytes = ["dep:bytes", "cheap-clone/bytes"]
 either = ["cheap-clone/either"]
 smol_str = ["dep:smol_str", "cheap-clone/smol_str"]
@@ -27,7 +28,7 @@ xxhash3 = ["xxhash-rust/xxh3"]
 
 [dependencies]
 equivalent = "1"
-cheap-clone = { version = "0.1", default-features = false }
+cheap-clone = { version = "0.1", path = "../cheap-clone", default-features = false }
 paste = "1"
 
 crc32fast = { version = "1", optional = true, default-features = false }

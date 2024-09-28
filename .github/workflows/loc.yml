@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crates: ["dbutils"]
+        crates: ["dbutils", "indexsort", "cheap-clone"]
     steps:
       - uses: actions/checkout@v3
 

@@ -7,9 +7,9 @@
 [submodule "orderwal"]
 	path = orderwal
 	url = https://github.com/al8n/orderwal.git
-[submodule "cheap-clone"]
-	path = cheap-clone
-	url = https://github.com/al8n/cheap-clone.git
 [submodule "rarena"]
 	path = rarena
 	url = https://github.com/al8n/rarena.git
+[submodule "valog"]
+	path = valog
+	url = https://github.com/al8n/valog.git
