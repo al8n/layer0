@@ -15,6 +15,7 @@ default = ["std"]
 alloc = ["cheap-clone/alloc"]
 std = ["alloc", "cheap-clone/default", "crc32fast?/std", "xxhash-rust?/std"]
 
+among = ["cheap-clone/among"]
 bytes = ["dep:bytes", "cheap-clone/bytes"]
 either = ["cheap-clone/either"]
 smol_str = ["dep:smol_str", "cheap-clone/smol_str"]
