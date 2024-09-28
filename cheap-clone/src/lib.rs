@@ -121,7 +121,7 @@ impl<'a, T> CheapClone for &'a T {
 
 macro_rules! impl_cheap_clone_for_tuple {
   ($($param:literal),+ $(,)?) => {
-    paste::paste! {
+    ::paste::paste! {
       impl<$([< T $param >]: CheapClone),+> CheapClone for ($([< T $param >],)+) {
         fn cheap_clone(&self) -> Self {
           ($(self.$param.cheap_clone(),)+)
