@@ -1,18 +1,18 @@
-name: indexsort
+name: dbutils
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'indexsort/src/**'
-      - 'indexsort/tests/**'
-      - 'indexsort/Cargo.toml'
+      - 'dbutils/src/**'
+      - 'dbutils/tests/**'
+      - 'dbutils/Cargo.toml'
   pull_request:
     paths:
-      - 'indexsort/src/**'
-      - 'indexsort/tests/**'
-      - 'indexsort/Cargo.toml'
+      - 'dbutils/src/**'
+      - 'dbutils/tests/**'
+      - 'dbutils/Cargo.toml'
 
 env:
   CARGO_TERM_COLOR: always
@@ -59,7 +59,7 @@ jobs:
     - name: Install cargo-hack
       run: cargo install cargo-hack
     - name: Apply clippy lints
-      run: cargo hack clippy --each-feature -p indexsort
+      run: cargo hack clippy --each-feature -p dbutils
 
   # Run tests on some extra platforms
   cross:
@@ -139,7 +139,7 @@ jobs:
         path: ~/.cargo
         key: ${{ runner.os }}-coverage-dotcargo
     - name: Run build
-      run: cargo hack build --each-feature -p indexsort
+      run: cargo hack build --each-feature -p dbutils
   
   test:
     name: test
@@ -173,7 +173,63 @@ jobs:
         path: ~/.cargo
         key: ${{ runner.os }}-coverage-dotcargo
     - name: Run test
-      run: cargo test -p indexsort --all-features 
+      run: cargo test -p dbutils --all-features
+
+  sanitizer:
+    name: sanitizer
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache cargo build and registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-sanitizer-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sanitizer-
+      - name: Install Rust
+        run: rustup update $nightly && rustup default $nightly
+      - name: Install rust-src
+        run: rustup component add rust-src
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
+      - name: ASAN / LSAN / TSAN
+        run: ci/sanitizer.sh
+
+  miri:
+    name: miri
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache cargo build and registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-miri-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-miri-
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
+      - name: Miri
+        run: ci/miri.sh 
 
   docs:
     name: docs
@@ -209,6 +265,8 @@ jobs:
   #     - build
   #     - cross
   #     - test
+  #     - sanitizer
+  #     - miri
   #     - docs
   #   steps:
   #     - uses: actions/checkout@v3

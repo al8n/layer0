@@ -107,7 +107,10 @@ pub fn sort_slice<T, L>(mut data: impl AsMut<[T]>, less: L)
 where
   L: Fn(&[T], usize, usize) -> bool,
 {
-  let mut sorter = LessSwap { data: data.as_mut(), less };
+  let mut sorter = LessSwap {
+    data: data.as_mut(),
+    less,
+  };
   sorter.sort()
 }
 
@@ -118,7 +121,10 @@ pub fn sort_slice_stable<T, L>(mut data: impl AsMut<[T]>, less: L)
 where
   L: Fn(&[T], usize, usize) -> bool,
 {
-  let mut sorter = LessSwap { data: data.as_mut(), less };
+  let mut sorter = LessSwap {
+    data: data.as_mut(),
+    less,
+  };
   sorter.sort_stable()
 }
 
@@ -128,7 +134,10 @@ pub fn slice_is_sorted<T, L>(data: impl AsRef<[T]>, less: L) -> bool
 where
   L: Fn(usize, usize) -> bool,
 {
-  let sorter = ImmutableLessSwap { data: data.as_ref(), less };
+  let sorter = ImmutableLessSwap {
+    data: data.as_ref(),
+    less,
+  };
   sorter.is_sorted()
 }
 
