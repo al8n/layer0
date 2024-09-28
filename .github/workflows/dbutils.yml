@@ -203,7 +203,7 @@ jobs:
       - name: Install cargo-hack
         run: cargo install cargo-hack
       - name: ASAN / LSAN / TSAN
-        run: ci/sanitizer.sh
+        run: dbutils/ci/sanitizer.sh
 
   miri:
     name: miri
@@ -229,7 +229,7 @@ jobs:
       - name: Install cargo-hack
         run: cargo install cargo-hack
       - name: Miri
-        run: ci/miri.sh 
+        run: dbutils/ci/miri.sh 
 
   docs:
     name: docs
@@ -251,7 +251,7 @@ jobs:
           toolchain: ${{ env.nightly }}
           override: true
       - name: "doc --lib --all-features"
-        run: cargo doc --lib --no-deps --all-features
+        run: cargo doc --lib --no-deps --all-features -p dbutils
         env:
           RUSTFLAGS: --cfg docsrs
           RUSTDOCFLAGS: --cfg docsrs -Dwarnings

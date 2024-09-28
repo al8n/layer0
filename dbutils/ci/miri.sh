@@ -7,5 +7,4 @@ cargo miri setup
 
 export MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-disable-isolation -Zmiri-symbolic-alignment-check"
 
-cargo miri test --all-features
-
+cargo miri test --all-features -p dbutils
