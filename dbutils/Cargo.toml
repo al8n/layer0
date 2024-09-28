@@ -1,14 +1,14 @@
 [package]
 name = "dbutils"
 version = "0.4.4"
-repository.workspace = true
+repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"
 homepage.workspace = true
 categories.workspace = true
 license.workspace = true
 metadata.workspace = true
-description = "Utils for developing database"
+description = "Utils for developing databases"
 
 [features]
 default = ["std"]

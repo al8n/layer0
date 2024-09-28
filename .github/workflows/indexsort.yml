@@ -1,0 +1,91 @@
+name: indexsort
+
+on:
+  push:
+    # Ignore bors branches, since they are covered by `clippy_bors.yml`
+    branches:
+      - main
+    # Don't run Clippy tests, when only textfiles were modified
+    paths-ignore:
+      - 'indexsort/README'
+      - 'indexsort/COPYRIGHT'
+      - 'indexsort/LICENSE-*'
+      - '**.md'
+      - '**.txt'
+    paths:
+      - 'indexsort/**'
+  pull_request:
+    paths:
+      - 'indexsort/**'
+    # Don't run Clippy tests, when only textfiles were modified
+    paths-ignore:
+      - 'indexsort/README'
+      - 'indexsort/COPYRIGHT'
+      - 'indexsort/LICENSE-*'
+      - '**.md'
+      - '**.txt'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - nightly
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+  test:
+    name: test
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache cargo build and registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-test-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-test-
+    - name: Install Rust
+      # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
+      run: rustup update stable --no-self-update && rustup default stable
+    - name: Install cargo-hack
+      run: cargo install cargo-hack
+    - name: Cache ~/.cargo
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-coverage-dotcargo
+    - name: Run test
+      run: cargo test -p indexsort --all-features

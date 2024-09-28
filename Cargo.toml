@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "dbutils",
+  "indexsort",
 ]
 resolver = "2"
 

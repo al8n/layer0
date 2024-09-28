@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crates: ["dbutils"]
+        crates: ["dbutils", "indexsort"]
     steps:
       - uses: actions/checkout@v3
 

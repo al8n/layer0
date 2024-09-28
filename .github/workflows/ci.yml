@@ -240,6 +240,7 @@ jobs:
         run: cargo install cargo-hack
       - name: Miri
         run: ci/miri.sh
+
   # loom:
   #   name: loom
   #   strategy:
@@ -267,8 +268,7 @@ jobs:
   #       run: cargo install cargo-hack
   #     - name: Loom tests
   #       run: RUSTFLAGS="--cfg loom -Dwarnings" cargo hack test --test loom
-  
-  # valgrind
+
   # valgrind:
   #   name: valgrind
   #   runs-on: ubuntu-latest
@@ -369,7 +369,8 @@ jobs:
           command: tarpaulin
           args: --all-features --run-types tests --run-types doctests --workspace --out xml
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3.1.1
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+          slug: ${{ github.repository }}
