@@ -2,6 +2,7 @@
 //!
 #![no_std]
 #![deny(missing_docs)]
+#![forbid(unsafe_code)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 
@@ -761,7 +762,7 @@ fn rotate(data: &mut impl IndexSort, a: usize, m: usize, b: usize) {
 /// Returns a threshold at which quicksort should switch
 /// to heapsort. It returns 2*ceil(lg(n+1)).
 #[inline]
-fn max_depth(n: usize) -> usize {
+const fn max_depth(n: usize) -> usize {
   let mut depth = 0;
   let mut i = n;
   while i > 0 {
