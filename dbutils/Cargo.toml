@@ -11,9 +11,9 @@ metadata.workspace = true
 description = "Utils for developing databases"
 
 [features]
-default = ["std"]
+default = ["std", "cheap-clone/default"]
 alloc = ["cheap-clone/alloc"]
-std = ["alloc", "cheap-clone/default", "crc32fast?/std", "xxhash-rust?/std"]
+std = ["alloc", "cheap-clone/std", "crc32fast?/std", "xxhash-rust?/std"]
 
 among = ["cheap-clone/among"]
 bytes = ["dep:bytes", "cheap-clone/bytes"]
