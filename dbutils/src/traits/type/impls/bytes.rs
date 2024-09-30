@@ -186,6 +186,21 @@ impl Type for [u8] {
   }
 }
 
+impl KeyRef<'_, [u8]> for [u8] {
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
+  }
+}
+
 impl<const N: usize> Type for [u8; N] {
   type Ref<'a> = Self;
 
