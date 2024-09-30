@@ -176,6 +176,26 @@ impl PartialOrd<Str<'_>> for &str {
   }
 }
 
+impl Type for str {
+  type Ref<'a> = Str<'a>;
+  type Error = BufferTooSmall;
+
+  fn encoded_len(&self) -> usize {
+    self.len()
+  }
+
+  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+    let buf_len = buf.len();
+    let self_len = self.len();
+    if buf_len < self_len {
+      return Err(BufferTooSmall::new(self_len, buf_len));
+    }
+
+    buf.copy_from_slice(self.as_bytes());
+    Ok(self_len)
+  }
+}
+
 impls! {
   #[cfg(feature = "alloc")]
   ::std::borrow::Cow<'_, str>,

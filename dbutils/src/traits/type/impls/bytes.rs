@@ -163,6 +163,74 @@ impl PartialEq<SliceRef<'_>> for &[u8] {
   }
 }
 
+impl Type for [u8] {
+  type Ref<'a> = SliceRef<'a>;
+
+  type Error = BufferTooSmall;
+
+  #[inline]
+  fn encoded_len(&self) -> usize {
+    self.len()
+  }
+
+  #[inline]
+  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+    let buf_len = buf.len();
+    let self_len = self.len();
+    if buf_len < self_len {
+      return Err(BufferTooSmall::new(self_len, buf_len));
+    }
+
+    buf.copy_from_slice(self);
+    Ok(self_len)
+  }
+}
+
+impl<const N: usize> Type for [u8; N] {
+  type Ref<'a> = Self;
+
+  type Error = BufferTooSmall;
+
+  fn encoded_len(&self) -> usize {
+    N
+  }
+
+  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+    let buf_len = buf.len();
+
+    if buf_len < N {
+      return Err(BufferTooSmall::new(N, buf_len));
+    }
+
+    buf[..N].copy_from_slice(self.as_ref());
+    Ok(N)
+  }
+}
+
+impl<const N: usize> TypeRef<'_> for [u8; N] {
+  #[inline]
+  unsafe fn from_slice(src: &'_ [u8]) -> Self {
+    let mut this = [0; N];
+    this.copy_from_slice(src);
+    this
+  }
+}
+
+impl<const N: usize> KeyRef<'_, [u8; N]> for [u8; N] {
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<[u8; N]>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
+  }
+}
+
 impls! {
   #[cfg(feature = "alloc")]
   ::std::borrow::Cow<'_, [u8]>,
