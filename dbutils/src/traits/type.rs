@@ -98,7 +98,7 @@ pub trait TypeRef<'a>: core::fmt::Debug {
 }
 
 /// The key reference trait for comparing `K`.
-pub trait KeyRef<'a, K>: TypeRef<'a> + Ord + Comparable<K> {
+pub trait KeyRef<'a, K: ?Sized>: TypeRef<'a> + Ord + Comparable<K> {
   /// Compares with a type `Q` which can be borrowed from [`T::Ref`](Type::Ref).
   fn compare<Q>(&self, a: &Q) -> cmp::Ordering
   where
