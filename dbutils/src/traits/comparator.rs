@@ -5,6 +5,30 @@ use core::{
 
 use cheap_clone::CheapClone;
 
+/// StaticComparator is used for key-value database developers to define their own key comparison logic.
+/// e.g. some key-value database developers may want to alpabetically comparation.
+///
+/// Comparing to [`Comparator`], `StaticComparator` is not object-safe, but it does not to create a new object when comparing.
+pub trait StaticComparator: core::fmt::Debug {
+  /// Compares two byte slices.
+  fn compare(a: &[u8], b: &[u8]) -> cmp::Ordering;
+
+  /// Returns if a is contained in range.
+  fn contains(start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool;
+}
+
+impl<T: StaticComparator> Comparator for T {
+  #[inline]
+  fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
+    T::compare(a, b)
+  }
+
+  #[inline]
+  fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
+    T::contains(start_bound, end_bound, key)
+  }
+}
+
 /// Comparator is used for key-value database developers to define their own key comparison logic.
 /// e.g. some key-value database developers may want to alpabetically comparation
 pub trait Comparator: core::fmt::Debug {
@@ -39,27 +63,15 @@ impl<C: Comparator> Comparator for std::rc::Rc<C> {
   }
 }
 
-#[cfg(any(feature = "std", feature = "alloc"))]
-impl<C: Comparator> Comparator for std::boxed::Box<C> {
+impl<C: StaticComparator> StaticComparator for Reverse<C> {
   #[inline]
-  fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
-    (**self).compare(a, b)
-  }
-
-  fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
-    (**self).contains(start_bound, end_bound, key)
-  }
-}
-
-impl<C: Comparator> Comparator for Reverse<C> {
-  #[inline]
-  fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
-    self.0.compare(b, a)
+  fn compare(a: &[u8], b: &[u8]) -> cmp::Ordering {
+    C::compare(b, a)
   }
 
   #[inline]
-  fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
-    self.0.contains(start_bound, end_bound, key)
+  fn contains(start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
+    C::contains(start_bound, end_bound, key)
   }
 }
 
@@ -67,14 +79,14 @@ impl<C: Comparator> Comparator for Reverse<C> {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Ascend;
 
-impl Comparator for Ascend {
+impl StaticComparator for Ascend {
   #[inline]
-  fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
+  fn compare(a: &[u8], b: &[u8]) -> cmp::Ordering {
     a.cmp(b)
   }
 
   #[inline]
-  fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
+  fn contains(start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
     <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<&[u8]>>::contains::<&[u8]>(
       &(start_bound, end_bound),
       &key,
@@ -88,14 +100,14 @@ impl CheapClone for Ascend {}
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Descend;
 
-impl Comparator for Descend {
+impl StaticComparator for Descend {
   #[inline]
-  fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
+  fn compare(a: &[u8], b: &[u8]) -> cmp::Ordering {
     b.cmp(a)
   }
 
   #[inline]
-  fn contains(&self, start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
+  fn contains(start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
     <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<&[u8]>>::contains::<&[u8]>(
       &(start_bound, end_bound),
       &key,

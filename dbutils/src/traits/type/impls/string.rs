@@ -29,21 +29,6 @@ macro_rules! impls {
           }
         }
 
-        impl<'a> KeyRef<'a, $ty> for Str<'a> {
-          #[inline]
-          fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-          where
-            Q: ?Sized + Ord + Comparable<Self>,
-          {
-            Comparable::compare(a, self).reverse()
-          }
-
-          #[inline]
-          unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-            a.cmp(b)
-          }
-        }
-
         impl Equivalent<Str<'_>> for $ty {
           #[inline]
           fn equivalent(&self, key: &Str<'_>) -> bool {
@@ -193,6 +178,44 @@ impl Type for str {
 
     buf.copy_from_slice(self.as_bytes());
     Ok(self_len)
+  }
+}
+
+impl<'a, K> KeyRef<'a, K> for Str<'a>
+where
+  K: ?Sized + Type<Ref<'a> = Str<'a>>,
+  Str<'a>: Comparable<K>,
+{
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
+  }
+}
+
+impl<'a, K> KeyRef<'a, K> for &'a str
+where
+  K: ?Sized + Type<Ref<'a> = &'a str>,
+  &'a str: Comparable<K>,
+{
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
   }
 }
 

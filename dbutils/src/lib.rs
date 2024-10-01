@@ -21,7 +21,7 @@ pub mod buffer;
 
 /// Some traits may be useful.
 pub mod traits;
-pub use traits::comparator::{Ascend, Comparator, Descend};
+pub use traits::comparator::{Ascend, Comparator, Descend, StaticComparator};
 
 #[doc(inline)]
 pub use equivalent;

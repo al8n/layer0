@@ -30,21 +30,6 @@ macro_rules! impls {
           }
         }
 
-        impl<'a> KeyRef<'a, $ty> for SliceRef<'a> {
-          #[inline]
-          fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-          where
-            Q: ?Sized + Ord + Comparable<Self>,
-          {
-            Comparable::compare(a, self).reverse()
-          }
-
-          #[inline]
-          unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-            a.cmp(b)
-          }
-        }
-
         impl Equivalent<SliceRef<'_>> for $ty {
           #[inline]
           fn equivalent(&self, key: &SliceRef<'_>) -> bool {
@@ -163,6 +148,44 @@ impl PartialEq<SliceRef<'_>> for &[u8] {
   }
 }
 
+impl<'a, K> KeyRef<'a, K> for SliceRef<'a>
+where
+  K: ?Sized + Type<Ref<'a> = SliceRef<'a>>,
+  SliceRef<'a>: Comparable<K>,
+{
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
+  }
+}
+
+impl<'a, K> KeyRef<'a, K> for &'a [u8]
+where
+  K: ?Sized + Type<Ref<'a> = SliceRef<'a>>,
+  &'a [u8]: Comparable<K>,
+{
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
+  }
+}
+
 impl Type for [u8] {
   type Ref<'a> = SliceRef<'a>;
 
@@ -188,7 +211,7 @@ impl Type for [u8] {
 
 impl KeyRef<'_, [u8]> for [u8] {
   #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
+  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
   where
     Q: ?Sized + Ord + Comparable<Self>,
   {
@@ -196,7 +219,7 @@ impl KeyRef<'_, [u8]> for [u8] {
   }
 
   #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
     a.cmp(b)
   }
 }
@@ -339,20 +362,20 @@ const _: () = {
     }
   }
 
-  impl<'a, const N: usize> KeyRef<'a, SmallVec<[u8; N]>> for SliceRef<'a> {
-    #[inline]
-    fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-    where
-      Q: ?Sized + Ord + Comparable<Self>,
-    {
-      Comparable::compare(a, self).reverse()
-    }
+  // impl<'a, const N: usize> KeyRef<'a, SmallVec<[u8; N]>> for SliceRef<'a> {
+  //   #[inline]
+  //   fn compare<Q>(&self, a: &Q) -> cmp::Ordering
+  //   where
+  //     Q: ?Sized + Ord + Comparable<Self>,
+  //   {
+  //     Comparable::compare(a, self).reverse()
+  //   }
 
-    #[inline]
-    unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-      a.cmp(b)
-    }
-  }
+  //   #[inline]
+  //   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
+  //     a.cmp(b)
+  //   }
+  // }
 
   impl<const N: usize> Equivalent<SliceRef<'_>> for SmallVec<[u8; N]> {
     #[inline]
