@@ -99,7 +99,7 @@ pub trait TypeRef<'a>: core::fmt::Debug {
 
 /// The key reference trait for comparing `K`.
 pub trait KeyRef<'a, K: ?Sized>: Ord + Comparable<K> {
-  /// Compares with a type `Q` which can be borrowed from [`T::Ref`](Type::Ref).
+  /// Compares with a type `Q` which can be borrowed from [`K::Ref`](Type::Ref).
   fn compare<Q>(&self, a: &Q) -> cmp::Ordering
   where
     Q: ?Sized + Ord + Comparable<Self>;
@@ -107,6 +107,6 @@ pub trait KeyRef<'a, K: ?Sized>: Ord + Comparable<K> {
   /// Compares two binary formats of the `K` directly.
   ///
   /// ## Safety
-  /// - The `a` and `b` must be the same as the one returned by [`encode`](Type::encode).
+  /// - The `a` and `b` must be the same as the one returned by [`K::encode`](Type::encode).
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering;
 }
