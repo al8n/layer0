@@ -72,6 +72,20 @@ macro_rules! builder {
           $vis f: F,
         }
 
+        impl<F> ::core::convert::From<($size, F)> for $name<F> {
+          #[inline]
+          fn from((size, f): ($size, F)) -> Self {
+            Self { size, f }
+          }
+        }
+
+        impl<F> ::core::convert::From<$name<F>> for ($size, F) {
+          #[inline]
+          fn from(builder: $name<F>) -> Self {
+            (builder.size, builder.f)
+          }
+        }
+
         impl<F> $name<F> {
           #[doc = "Creates a new `" $name "` with the given size and builder closure."]
           #[inline]

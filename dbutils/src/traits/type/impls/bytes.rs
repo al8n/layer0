@@ -76,6 +76,14 @@ impl<'a> TypeRef<'a> for &'a [u8] {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SliceRef<'a>(&'a [u8]);
 
+impl<'a> SliceRef<'a> {
+  /// Returns the inner bytes slice.
+  #[inline]
+  pub const fn as_bytes(&self) -> &[u8] {
+    self.0
+  }
+}
+
 impl Borrow<[u8]> for SliceRef<'_> {
   #[inline]
   fn borrow(&self) -> &[u8] {

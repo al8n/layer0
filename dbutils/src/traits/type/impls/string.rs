@@ -75,6 +75,13 @@ impl<'a> TypeRef<'a> for &'a str {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Str<'a>(&'a str);
 
+impl<'a> Str<'a> {
+  /// Returns the inner str.
+  pub const fn as_str(&self) -> &str {
+    self.0
+  }
+}
+
 impl<'a> From<&'a str> for Str<'a> {
   fn from(src: &'a str) -> Self {
     Self(src)
