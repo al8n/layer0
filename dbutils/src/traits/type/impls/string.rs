@@ -13,6 +13,7 @@ macro_rules! impls {
           type Ref<'a> = Str<'a>;
           type Error = BufferTooSmall;
 
+          #[inline]
           fn encoded_len(&self) -> usize {
             self.len()
           }
@@ -25,6 +26,17 @@ macro_rules! impls {
             }
 
             buf.copy_from_slice(self.as_bytes());
+            Ok(self_len)
+          }
+
+          fn encode_to_buffer(&self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> Result<usize, Self::Error> {
+            let buf_len = buf.capacity();
+            let self_len = self.len();
+            if buf_len < self_len {
+              return Err(BufferTooSmall::new(self_len, buf_len));
+            }
+
+            buf.put_slice_unchecked(self.as_bytes());
             Ok(self_len)
           }
         }
@@ -172,10 +184,12 @@ impl Type for str {
   type Ref<'a> = Str<'a>;
   type Error = BufferTooSmall;
 
+  #[inline]
   fn encoded_len(&self) -> usize {
     self.len()
   }
 
+  #[inline]
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
     let buf_len = buf.len();
     let self_len = self.len();
@@ -184,6 +198,18 @@ impl Type for str {
     }
 
     buf.copy_from_slice(self.as_bytes());
+    Ok(self_len)
+  }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+    let self_len = self.len();
+    if buf_len < self_len {
+      return Err(BufferTooSmall::new(self_len, buf_len));
+    }
+
+    buf.put_slice_unchecked(self.as_bytes());
     Ok(self_len)
   }
 }

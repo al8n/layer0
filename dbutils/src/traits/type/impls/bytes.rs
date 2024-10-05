@@ -28,6 +28,18 @@ macro_rules! impls {
             buf.copy_from_slice(self.as_ref());
             Ok(self_len)
           }
+
+          #[inline]
+          fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+            let buf_len = buf.capacity();
+            let self_len = self.len();
+            if buf_len < self_len {
+              return Err(BufferTooSmall::new(self_len, buf_len));
+            }
+
+            buf.put_slice_unchecked(self.as_ref());
+            Ok(self_len)
+          }
         }
 
         impl Equivalent<SliceRef<'_>> for $ty {
@@ -215,6 +227,18 @@ impl Type for [u8] {
     buf.copy_from_slice(self);
     Ok(self_len)
   }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+    let self_len = self.len();
+    if buf_len < self_len {
+      return Err(BufferTooSmall::new(self_len, buf_len));
+    }
+
+    buf.put_slice_unchecked(self);
+    Ok(self_len)
+  }
 }
 
 impl KeyRef<'_, [u8]> for [u8] {
@@ -237,6 +261,7 @@ impl<const N: usize> Type for [u8; N] {
 
   type Error = BufferTooSmall;
 
+  #[inline(always)]
   fn encoded_len(&self) -> usize {
     N
   }
@@ -249,6 +274,17 @@ impl<const N: usize> Type for [u8; N] {
     }
 
     buf[..N].copy_from_slice(self.as_ref());
+    Ok(N)
+  }
+
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+
+    if buf_len < N {
+      return Err(BufferTooSmall::new(N, buf_len));
+    }
+
+    buf.put_slice_unchecked(self.as_ref());
     Ok(N)
   }
 }
@@ -366,6 +402,18 @@ const _: () = {
       }
 
       buf.copy_from_slice(self.as_ref());
+      Ok(self_len)
+    }
+
+    #[inline]
+    fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+      let buf_len = buf.capacity();
+      let self_len = self.len();
+      if buf_len < self_len {
+        return Err(BufferTooSmall::new(self_len, buf_len));
+      }
+
+      buf.put_slice_unchecked(self.as_ref());
       Ok(self_len)
     }
   }

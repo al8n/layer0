@@ -1,7 +1,7 @@
 use core::cmp;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
-use super::{BufferTooSmall, Comparable, KeyRef, Type, TypeRef};
+use super::{BufferTooSmall, Comparable, KeyRef, Type, TypeRef, VacantBuffer};
 
 const SOCKET_V6_ENCODED_LEN: usize = 18;
 const SOCKET_V4_ENCODED_LEN: usize = 6;
@@ -27,6 +27,18 @@ impl Type for Ipv4Addr {
     }
 
     buf[..IPV4_ENCODED_LEN].copy_from_slice(self.octets().as_ref());
+    Ok(IPV4_ENCODED_LEN)
+  }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+
+    if buf_len < IPV4_ENCODED_LEN {
+      return Err(BufferTooSmall::new(IPV4_ENCODED_LEN, buf_len));
+    }
+
+    buf.put_slice_unchecked(self.octets().as_ref());
     Ok(IPV4_ENCODED_LEN)
   }
 }
@@ -79,6 +91,18 @@ impl Type for Ipv6Addr {
     buf[..IPV6_ENCODED_LEN].copy_from_slice(self.octets().as_ref());
     Ok(IPV6_ENCODED_LEN)
   }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+
+    if buf_len < IPV6_ENCODED_LEN {
+      return Err(BufferTooSmall::new(IPV6_ENCODED_LEN, buf_len));
+    }
+
+    buf.put_slice_unchecked(self.octets().as_ref());
+    Ok(IPV6_ENCODED_LEN)
+  }
 }
 
 impl TypeRef<'_> for Ipv6Addr {
@@ -127,7 +151,20 @@ impl Type for SocketAddrV4 {
     }
 
     buf[..IPV4_ENCODED_LEN].copy_from_slice(self.ip().octets().as_ref());
-    buf[IPV4_ENCODED_LEN..SOCKET_V6_ENCODED_LEN].copy_from_slice(&self.port().to_le_bytes());
+    buf[IPV4_ENCODED_LEN..SOCKET_V4_ENCODED_LEN].copy_from_slice(&self.port().to_le_bytes());
+    Ok(SOCKET_V4_ENCODED_LEN)
+  }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+
+    if buf_len < SOCKET_V4_ENCODED_LEN {
+      return Err(BufferTooSmall::new(SOCKET_V4_ENCODED_LEN, buf_len));
+    }
+
+    buf.put_slice_unchecked(self.ip().octets().as_ref());
+    buf.put_u16_le_unchecked(self.port());
     Ok(SOCKET_V4_ENCODED_LEN)
   }
 }
@@ -180,6 +217,19 @@ impl Type for SocketAddrV6 {
 
     buf[..IPV6_ENCODED_LEN].copy_from_slice(self.ip().octets().as_ref());
     buf[IPV6_ENCODED_LEN..SOCKET_V6_ENCODED_LEN].copy_from_slice(&self.port().to_le_bytes());
+    Ok(SOCKET_V6_ENCODED_LEN)
+  }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let buf_len = buf.capacity();
+
+    if buf_len < SOCKET_V6_ENCODED_LEN {
+      return Err(BufferTooSmall::new(SOCKET_V6_ENCODED_LEN, buf_len));
+    }
+
+    buf.put_slice_unchecked(self.ip().octets().as_ref());
+    buf.put_u16_le_unchecked(self.port());
     Ok(SOCKET_V6_ENCODED_LEN)
   }
 }

@@ -316,9 +316,9 @@ impl<'a> VacantBuffer<'a> {
   }
 
   impl_get_varint!(u16, u32, u64, u128, i16, i32, i64, i128);
-  impl_get!(u16, u32, u64, u128, i16, i32, i64, i128);
+  impl_get!(u16, u32, u64, u128, i16, i32, i64, i128, f32, f64);
   impl_put_varint!(u16, u32, u64, u128, i16, i32, i64, i128);
-  impl_put!(u16, u32, u64, u128, i16, i32, i64, i128);
+  impl_put!(u16, u32, u64, u128, i16, i32, i64, i128, f32, f64);
 
   /// Put a byte to the vacant value.
   pub fn put_u8(&mut self, value: u8) -> Result<(), NotEnoughSpace> {

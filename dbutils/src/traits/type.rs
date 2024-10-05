@@ -4,6 +4,8 @@ use core::cmp::{self, Reverse};
 use equivalent::Comparable;
 pub use impls::*;
 
+use crate::buffer::VacantBuffer;
+
 /// Returned when the encoded buffer is too small to hold the bytes format of the [`Type`].
 #[derive(Debug)]
 pub struct BufferTooSmall {
@@ -42,10 +44,15 @@ pub trait Type: core::fmt::Debug {
   /// Returns the length of the encoded type size.
   fn encoded_len(&self) -> usize;
 
-  /// Encodes the type into a bytes slice, you can assume that the buf length is equal to the value returned by [`encoded_len`](Type::encoded_len).
+  /// Encodes the type into a bytes slice, you can assume that the buf length is larger or equal to the value returned by [`encoded_len`](Type::encoded_len).
   ///
   /// Returns the number of bytes written to the buffer.
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error>;
+
+  /// Encodes the type into a [`VacantBuffer`], you can assume that the buf length is larger or equal to the value returned by [`encoded_len`](Type::encoded_len).
+  ///
+  /// Returns the number of bytes written to the buffer.
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error>;
 
   /// Encodes the type into a [`Vec<u8>`].
   #[inline]
@@ -71,6 +78,11 @@ impl<T: Type> Type for &T {
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
     T::encode(*self, buf)
   }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    T::encode_to_buffer(self, buf)
+  }
 }
 
 impl<T: Type> Type for Reverse<T> {
@@ -85,6 +97,11 @@ impl<T: Type> Type for Reverse<T> {
   #[inline]
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
     self.0.encode(buf)
+  }
+
+  #[inline]
+  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    self.0.encode_to_buffer(buf)
   }
 }
 
