@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Information {
   required: usize,
-  actual: usize,
+  remaining: usize,
 }
 
 /// Returned when the encoded buffer is too small to hold the bytes format of the types.
@@ -20,9 +20,12 @@ impl InsufficientBuffer {
 
   /// Creates a new instance of the error with size information.
   #[inline]
-  pub const fn with_infomation(required: usize, actual: usize) -> Self {
+  pub const fn with_information(required: usize, remaining: usize) -> Self {
     Self {
-      info: Some(Information { required, actual }),
+      info: Some(Information {
+        required,
+        remaining,
+      }),
     }
   }
 
@@ -32,10 +35,10 @@ impl InsufficientBuffer {
     self.info.as_ref().map(|info| info.required)
   }
 
-  /// Returns the actual size.
+  /// Returns the remaining size.
   #[inline]
-  pub fn actual(&self) -> Option<usize> {
-    self.info.as_ref().map(|info| info.actual)
+  pub fn remaining(&self) -> Option<usize> {
+    self.info.as_ref().map(|info| info.remaining)
   }
 }
 
@@ -46,7 +49,7 @@ impl core::fmt::Display for InsufficientBuffer {
         write!(
           f,
           "incomplete buffer data: expected {} bytes for decoding, but only {} bytes were available",
-          info.required, info.actual
+          info.required, info.remaining
         )
       }
       None => {
@@ -77,9 +80,12 @@ impl IncompleteBuffer {
 
   /// Creates a new instance of the error with size information.
   #[inline]
-  pub const fn with_infomation(required: usize, actual: usize) -> Self {
+  pub const fn with_information(required: usize, remaining: usize) -> Self {
     Self {
-      info: Some(Information { required, actual }),
+      info: Some(Information {
+        required,
+        remaining,
+      }),
     }
   }
 
@@ -89,10 +95,10 @@ impl IncompleteBuffer {
     self.info.as_ref().map(|info| info.required)
   }
 
-  /// Returns the actual size.
+  /// Returns the remaining size.
   #[inline]
-  pub fn actual(&self) -> Option<usize> {
-    self.info.as_ref().map(|info| info.actual)
+  pub fn remaining(&self) -> Option<usize> {
+    self.info.as_ref().map(|info| info.remaining)
   }
 }
 
@@ -103,7 +109,7 @@ impl core::fmt::Display for IncompleteBuffer {
         write!(
           f,
           "incomplete buffer data: expected {} bytes for decoding, but only {} bytes were available",
-          info.required, info.actual
+          info.required, info.remaining
         )
       }
       None => {
