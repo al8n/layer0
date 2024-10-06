@@ -19,6 +19,9 @@ pub mod leb128;
 /// A vacant buffer that can be filled with bytes.
 pub mod buffer;
 
+/// Common error types.
+pub mod error;
+
 /// Some traits may be useful.
 pub mod traits;
 pub use traits::comparator::{Ascend, Comparator, Descend, StaticComparator};

@@ -8,6 +8,8 @@ use core::{
 
 use equivalent::{Comparable, Equivalent};
 
+use crate::error::InsufficientBuffer;
+
 use super::leb128::*;
 
 macro_rules! impl_get_varint {
@@ -57,11 +59,11 @@ macro_rules! impl_put_varint {
     $(
       paste::paste! {
         #[doc = "Encodes an `" $ty "`value into LEB128 variable length format, and writes it to the buffer."]
-        pub fn [< put_ $ty _varint >](&mut self, value: $ty) -> Result<usize, EncodeVarintError> {
+        pub fn [< put_ $ty _varint >](&mut self, value: $ty) -> Result<usize, $crate::error::InsufficientBuffer> {
           let len = [< encoded_ $ty _varint_len >](value);
           let remaining = self.cap - self.len;
           if len > remaining {
-            return Err(EncodeVarintError::BufferTooSmall);
+            return Err($crate::error::InsufficientBuffer::with_infomation(len, remaining));
           }
 
           // SAFETY: the value's ptr is aligned and the cap is the correct.
@@ -143,7 +145,7 @@ macro_rules! impl_put {
     $(
       paste::paste! {
         #[doc = "Puts a `" $ty "` to the buffer in little-endian format."]
-        pub fn [< put_ $ty _le>](&mut self, value: $ty) -> Result<(), NotEnoughSpace> {
+        pub fn [< put_ $ty _le>](&mut self, value: $ty) -> Result<(), $crate::error::InsufficientBuffer> {
           self.put_slice(&value.to_le_bytes())
         }
 
@@ -156,7 +158,7 @@ macro_rules! impl_put {
         }
 
         #[doc = "Puts a `" $ty "` to the buffer in big-endian format."]
-        pub fn [< put_ $ty _be>](&mut self, value: $ty) -> Result<(), NotEnoughSpace> {
+        pub fn [< put_ $ty _be>](&mut self, value: $ty) -> Result<(), $crate::error::InsufficientBuffer> {
           self.put_slice(&value.to_be_bytes())
         }
 
@@ -172,26 +174,6 @@ macro_rules! impl_put {
   };
 }
 
-/// Returns when the bytes are too large to be written to the vacant buffer.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct NotEnoughSpace {
-  remaining: usize,
-  want: usize,
-}
-
-impl core::fmt::Display for NotEnoughSpace {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(
-      f,
-      "vacant buffer does not have enough space (remaining {}, want {})",
-      self.remaining, self.want
-    )
-  }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for NotEnoughSpace {}
-
 /// A vacant buffer in the WAL.
 #[must_use = "vacant buffer must be filled with bytes."]
 #[derive(Debug)]
@@ -205,7 +187,7 @@ pub struct VacantBuffer<'a> {
 #[cfg(feature = "tracing")]
 impl<'a> Drop for VacantBuffer<'a> {
   fn drop(&mut self) {
-    let remaining = self.remaining();
+    let remaining = self.cap - self.len;
     if remaining > 0 {
       tracing::warn!(
         "vacant buffer is not fully filled with bytes (remaining {})",
@@ -267,14 +249,11 @@ impl<'a> VacantBuffer<'a> {
   }
 
   /// Put bytes to the vacant value.
-  pub fn put_slice(&mut self, bytes: &[u8]) -> Result<(), NotEnoughSpace> {
+  pub fn put_slice(&mut self, bytes: &[u8]) -> Result<(), InsufficientBuffer> {
     let len = bytes.len();
     let remaining = self.cap - self.len;
     if len > remaining {
-      return Err(NotEnoughSpace {
-        remaining,
-        want: len,
-      });
+      return Err(InsufficientBuffer::with_infomation(remaining, len));
     }
 
     // SAFETY: the value's ptr is aligned and the cap is the correct.
@@ -321,7 +300,7 @@ impl<'a> VacantBuffer<'a> {
   impl_put!(u16, u32, u64, u128, i16, i32, i64, i128, f32, f64);
 
   /// Put a byte to the vacant value.
-  pub fn put_u8(&mut self, value: u8) -> Result<(), NotEnoughSpace> {
+  pub fn put_u8(&mut self, value: u8) -> Result<(), InsufficientBuffer> {
     self.put_slice(&[value])
   }
 
@@ -334,7 +313,7 @@ impl<'a> VacantBuffer<'a> {
   }
 
   /// Puts a `i8` to the buffer.
-  pub fn put_i8(&mut self, value: i8) -> Result<(), NotEnoughSpace> {
+  pub fn put_i8(&mut self, value: i8) -> Result<(), InsufficientBuffer> {
     self.put_slice(&[value as u8])
   }
 

@@ -1,3 +1,5 @@
+use crate::error::{IncompleteBuffer, InsufficientBuffer};
+
 /**
 * This file is modified based on the https://github.com/arnohaase/bytes-varint
 */
@@ -19,7 +21,7 @@ macro_rules! decode_varint {
       }
 
       if index >= $buf.len() {
-        return Err(DecodeVarintError::NotEnoughBytes);
+        return Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new()));
       }
 
       let next = $buf[index] as $ty;
@@ -54,7 +56,7 @@ macro_rules! encode_varint {
 
     while $x >= 0x80 {
       if i >= $buf.len() {
-        return Err(EncodeVarintError::BufferTooSmall);
+        return Err(InsufficientBuffer::new());
       }
 
       $buf[i] = ($x as u8) | 0x80;
@@ -128,94 +130,70 @@ pub const fn encoded_i16_varint_len(value: i16) -> usize {
   encoded_i64_varint_len(value as i64)
 }
 
-/// Encoding varint error.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EncodeVarintError {
-  /// The buffer did not have enough space to encode the value.
-  BufferTooSmall,
-}
-
-impl core::fmt::Display for EncodeVarintError {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    match self {
-      Self::BufferTooSmall => write!(
-        f,
-        "the buffer did not have enough space to encode the value"
-      ),
-    }
-  }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for EncodeVarintError {}
-
 /// Encodes an `u128` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_u128_varint(mut x: u128, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_u128_varint(mut x: u128, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   encode_varint!(buf[x])
 }
 
 /// Encodes an `u64` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_u64_varint(mut x: u64, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_u64_varint(mut x: u64, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   encode_varint!(buf[x])
 }
 
 /// Encodes an `u32` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_u32_varint(mut x: u32, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_u32_varint(mut x: u32, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   encode_varint!(buf[x])
 }
 
 /// Encodes an `u16` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_u16_varint(mut x: u16, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_u16_varint(mut x: u16, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   encode_varint!(buf[x])
 }
 
 /// Encodes an `i128` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_i128_varint(x: i128, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_i128_varint(x: i128, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   let x = (x << 1) ^ (x >> 127); // Zig-zag encoding
   encode_u128_varint(x as u128, buf)
 }
 
 /// Encodes an `i64` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_i64_varint(x: i64, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_i64_varint(x: i64, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   let x = (x << 1) ^ (x >> 63); // Zig-zag encoding
   encode_u64_varint(x as u64, buf)
 }
 
 /// Encodes an `i32` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_i32_varint(x: i32, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_i32_varint(x: i32, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   encode_i64_varint(x as i64, buf)
 }
 
 /// Encodes an `i16` value into LEB128 variable length format, and writes it to the buffer.
 #[inline]
-pub fn encode_i16_varint(x: i16, buf: &mut [u8]) -> Result<usize, EncodeVarintError> {
+pub fn encode_i16_varint(x: i16, buf: &mut [u8]) -> Result<usize, InsufficientBuffer> {
   encode_i64_varint(x as i64, buf)
 }
 
 /// Decoding varint error.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DecodeVarintError {
   /// The buffer did not contain a valid LEB128 encoding.
   Overflow,
   /// The buffer did not contain enough bytes to decode a value.
-  NotEnoughBytes,
+  IncompleteBuffer(IncompleteBuffer),
 }
 
 impl core::fmt::Display for DecodeVarintError {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Self::Overflow => write!(f, "overflow"),
-      Self::NotEnoughBytes => write!(
-        f,
-        "the buffer did not contain enough bytes to decode a value"
-      ),
+      Self::IncompleteBuffer(e) => e.fmt(f),
     }
   }
 }
@@ -444,8 +422,8 @@ mod tests {
   fn test_buffer_too_small_error() {
     let mut buffer = [0u8; 1]; // Intentionally small buffer
     match encode_u64_varint(u64::MAX, &mut buffer) {
-      Err(EncodeVarintError::BufferTooSmall) => (),
-      _ => panic!("Expected BufferTooSmall error"),
+      Err(_) => (),
+      _ => panic!("Expected InsufficientBuffer error"),
     }
   }
 
@@ -534,8 +512,8 @@ mod tests {
   #[case::n_129(vec![0x81, 1], Ok((encoded_u16_varint_len(129), 129)))]
   #[case::max         (vec![0xff, 0xff, 0x03], Ok((encoded_u16_varint_len(u16::MAX), u16::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_u16(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, u16), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -554,8 +532,8 @@ mod tests {
   #[case::n_129(vec![0x81, 1], Ok((encoded_u32_varint_len(129), 129)))]
   #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0x0f], Ok((encoded_u32_varint_len(u32::MAX), u32::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0x10], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_u32(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, u32), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -574,8 +552,8 @@ mod tests {
   #[case::n_129(vec![0x81, 1], Ok((encoded_u64_varint_len(129), 129)))]
   #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((encoded_u64_varint_len(u64::MAX), u64::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_u64(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, u64), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -594,8 +572,8 @@ mod tests {
   #[case::n_129(vec![0x81, 1], Ok((encoded_u128_varint_len(129), 129)))]
   #[case::max         (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((encoded_u128_varint_len(u128::MAX), u128::MAX)))]
   #[case::num_overflow(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_u128(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, u128), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -618,8 +596,8 @@ mod tests {
   #[case::min               (vec![0xff, 0xff, 0x03], Ok((encoded_i16_varint_len(i16::MIN), i16::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_i16(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, i16), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -642,8 +620,8 @@ mod tests {
   #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0x0f], Ok((encoded_i32_varint_len(i32::MIN), i32::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0x10], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0x10], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_i32(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, i32), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -666,8 +644,8 @@ mod tests {
   #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01], Ok((encoded_i64_varint_len(i64::MIN), i64::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_i64(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, i64), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
@@ -690,8 +668,8 @@ mod tests {
   #[case::min               (vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03], Ok((encoded_i128_varint_len(i128::MIN), i128::MIN)))]
   #[case::num_overflow_plus (vec![0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
   #[case::num_overflow_minus(vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04], Err(DecodeVarintError::Overflow))]
-  #[case::buf_empty(vec![], Err(DecodeVarintError::NotEnoughBytes))]
-  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::NotEnoughBytes))]
+  #[case::buf_empty(vec![], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
+  #[case::buf_underflow(vec![0x80], Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::new())))]
   fn test_i128(#[case] bytes: Vec<u8>, #[case] expected: Result<(usize, i128), DecodeVarintError>) {
     let mut bytes = bytes;
     let buf: &[u8] = &mut bytes;
