@@ -24,6 +24,11 @@ Yet another sort crate, porting Golang sort package to Rust.
 indexsort = "0.1"
 ```
 
+## Example
+
+- See [`dtlog`](https://github.com/al8n/dtlog/blob/main/src/log.rs#L58) for when `indexsort` is more convenient than `sort*` in Rust's standard
+  library
+
 ## Acknowledgements
 - Porting Go's sort package, thanks for Go contributors. 
 
