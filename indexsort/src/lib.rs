@@ -19,7 +19,7 @@ struct ImmutableLessSwap<'a, T, L> {
   less: L,
 }
 
-impl<'a, T, L> IndexSort for ImmutableLessSwap<'a, T, L>
+impl<T, L> IndexSort for ImmutableLessSwap<'_, T, L>
 where
   L: Fn(usize, usize) -> bool,
 {
@@ -36,7 +36,7 @@ where
   }
 }
 
-impl<'a, T, L> IndexSort for LessSwap<'a, T, L>
+impl<T, L> IndexSort for LessSwap<'_, T, L>
 where
   L: Fn(&[T], usize, usize) -> bool,
 {
@@ -145,7 +145,7 @@ where
 /// Sort in reverse helper structure
 struct Reverse<'a, T>(&'a mut T);
 
-impl<'a, T: IndexSort> IndexSort for Reverse<'a, T> {
+impl<T: IndexSort> IndexSort for Reverse<'_, T> {
   #[inline]
   fn len(&self) -> usize {
     self.0.len()
@@ -342,7 +342,7 @@ impl<T: PartialOrd> IndexSort for ::alloc::vec::Vec<T> {
   }
 }
 
-impl<'a, T: PartialOrd> IndexSort for &'a mut [T] {
+impl<T: PartialOrd> IndexSort for &mut [T] {
   fn len(&self) -> usize {
     __slice_len(self)
   }

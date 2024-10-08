@@ -1,7 +1,7 @@
 use core::cmp;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
-use super::{BufferTooSmall, Comparable, KeyRef, Type, TypeRef, VacantBuffer};
+use super::{Comparable, InsufficientBuffer, KeyRef, Type, TypeRef, VacantBuffer};
 
 const SOCKET_V6_ENCODED_LEN: usize = 18;
 const SOCKET_V4_ENCODED_LEN: usize = 6;
@@ -11,7 +11,7 @@ const IPV4_ENCODED_LEN: usize = 4;
 impl Type for Ipv4Addr {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -23,7 +23,10 @@ impl Type for Ipv4Addr {
     let buf_len = buf.len();
 
     if buf_len < IPV4_ENCODED_LEN {
-      return Err(BufferTooSmall::new(IPV4_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        IPV4_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf[..IPV4_ENCODED_LEN].copy_from_slice(self.octets().as_ref());
@@ -35,7 +38,10 @@ impl Type for Ipv4Addr {
     let buf_len = buf.capacity();
 
     if buf_len < IPV4_ENCODED_LEN {
-      return Err(BufferTooSmall::new(IPV4_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        IPV4_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf.put_slice_unchecked(self.octets().as_ref());
@@ -73,7 +79,7 @@ impl KeyRef<'_, Ipv4Addr> for Ipv4Addr {
 impl Type for Ipv6Addr {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -85,7 +91,10 @@ impl Type for Ipv6Addr {
     let buf_len = buf.len();
 
     if buf_len < IPV6_ENCODED_LEN {
-      return Err(BufferTooSmall::new(IPV6_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        IPV6_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf[..IPV6_ENCODED_LEN].copy_from_slice(self.octets().as_ref());
@@ -97,7 +106,10 @@ impl Type for Ipv6Addr {
     let buf_len = buf.capacity();
 
     if buf_len < IPV6_ENCODED_LEN {
-      return Err(BufferTooSmall::new(IPV6_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        IPV6_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf.put_slice_unchecked(self.octets().as_ref());
@@ -135,7 +147,7 @@ impl KeyRef<'_, Ipv6Addr> for Ipv6Addr {
 impl Type for SocketAddrV4 {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -147,7 +159,10 @@ impl Type for SocketAddrV4 {
     let buf_len = buf.len();
 
     if buf_len < SOCKET_V4_ENCODED_LEN {
-      return Err(BufferTooSmall::new(SOCKET_V4_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SOCKET_V4_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf[..IPV4_ENCODED_LEN].copy_from_slice(self.ip().octets().as_ref());
@@ -160,7 +175,10 @@ impl Type for SocketAddrV4 {
     let buf_len = buf.capacity();
 
     if buf_len < SOCKET_V4_ENCODED_LEN {
-      return Err(BufferTooSmall::new(SOCKET_V4_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SOCKET_V4_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf.put_slice_unchecked(self.ip().octets().as_ref());
@@ -200,7 +218,7 @@ impl KeyRef<'_, SocketAddrV4> for SocketAddrV4 {
 impl Type for SocketAddrV6 {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -212,7 +230,10 @@ impl Type for SocketAddrV6 {
     let buf_len = buf.len();
 
     if buf_len < SOCKET_V6_ENCODED_LEN {
-      return Err(BufferTooSmall::new(SOCKET_V6_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SOCKET_V6_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf[..IPV6_ENCODED_LEN].copy_from_slice(self.ip().octets().as_ref());
@@ -225,7 +246,10 @@ impl Type for SocketAddrV6 {
     let buf_len = buf.capacity();
 
     if buf_len < SOCKET_V6_ENCODED_LEN {
-      return Err(BufferTooSmall::new(SOCKET_V6_ENCODED_LEN, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SOCKET_V6_ENCODED_LEN,
+        buf_len,
+      ));
     }
 
     buf.put_slice_unchecked(self.ip().octets().as_ref());

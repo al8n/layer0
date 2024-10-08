@@ -3,7 +3,6 @@ use crate::error::{IncompleteBuffer, InsufficientBuffer};
 /**
 * This file is modified based on the https://github.com/arnohaase/bytes-varint
 */
-
 const MAX_U128_LEB128: usize = 19;
 const MAX_U64_LEB128: usize = 10;
 const MAX_U32_LEB128: usize = 5;

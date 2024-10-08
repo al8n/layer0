@@ -1,3 +1,5 @@
+use crate::error::InsufficientBuffer;
+
 use super::*;
 
 mod bytes;
@@ -38,7 +40,7 @@ macro_rules! impl_numbers {
       impl Type for $ty {
         type Ref<'a> = Self;
 
-        type Error = $crate::traits::BufferTooSmall;
+        type Error = $crate::error::InsufficientBuffer;
 
         #[inline]
         fn encoded_len(&self) -> usize {
@@ -51,7 +53,7 @@ macro_rules! impl_numbers {
 
           let buf_len = buf.len();
           if buf_len < SIZE {
-            return Err($crate::traits::BufferTooSmall::new(SIZE, buf_len));
+            return Err($crate::error::InsufficientBuffer::with_information(SIZE, buf_len));
           }
 
           buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
@@ -64,7 +66,7 @@ macro_rules! impl_numbers {
 
           let buf_len = buf.capacity();
           if buf_len < SIZE {
-            return Err($crate::traits::BufferTooSmall::new(SIZE, buf_len));
+            return Err($crate::error::InsufficientBuffer::with_information(SIZE, buf_len));
           }
 
           buf.set_len(SIZE);
@@ -109,7 +111,7 @@ impl_numbers!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128);
 impl Type for f32 {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -122,7 +124,7 @@ impl Type for f32 {
 
     let buf_len = buf.len();
     if buf_len < SIZE {
-      return Err(BufferTooSmall::new(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
     }
 
     buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
@@ -135,7 +137,7 @@ impl Type for f32 {
 
     let buf_len = buf.capacity();
     if buf_len < SIZE {
-      return Err(BufferTooSmall::new(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
     }
 
     buf.put_f32_le_unchecked(*self);
@@ -155,7 +157,7 @@ impl TypeRef<'_> for f32 {
 impl Type for f64 {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -168,7 +170,7 @@ impl Type for f64 {
 
     let buf_len = buf.len();
     if buf_len < SIZE {
-      return Err(BufferTooSmall::new(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
     }
 
     buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
@@ -181,7 +183,7 @@ impl Type for f64 {
 
     let buf_len = buf.capacity();
     if buf_len < SIZE {
-      return Err(BufferTooSmall::new(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
     }
 
     buf.put_f64_le_unchecked(*self);
@@ -201,7 +203,7 @@ impl TypeRef<'_> for f64 {
 impl Type for bool {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -211,7 +213,7 @@ impl Type for bool {
   #[inline]
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
     if buf.is_empty() {
-      return Err(BufferTooSmall::new(1, 0));
+      return Err(InsufficientBuffer::with_information(1, 0));
     }
 
     buf[0] = *self as u8;
@@ -221,7 +223,7 @@ impl Type for bool {
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     if buf.capacity() < 1 {
-      return Err(BufferTooSmall::new(1, buf.capacity()));
+      return Err(InsufficientBuffer::with_information(1, buf.capacity()));
     }
 
     buf.put_u8_unchecked(*self as u8);
@@ -257,7 +259,7 @@ impl KeyRef<'_, bool> for bool {
 impl Type for char {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -268,7 +270,7 @@ impl Type for char {
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
     let len = self.len_utf8();
     if buf.len() < len {
-      return Err(BufferTooSmall::new(len, buf.len()));
+      return Err(InsufficientBuffer::with_information(len, buf.len()));
     }
     self.encode_utf8(buf);
     Ok(len)
@@ -278,7 +280,7 @@ impl Type for char {
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     let len = self.len_utf8();
     if buf.capacity() < len {
-      return Err(BufferTooSmall::new(len, buf.capacity()));
+      return Err(InsufficientBuffer::with_information(len, buf.capacity()));
     }
 
     let char_buf = [0; 4];

@@ -10,7 +10,7 @@ macro_rules! impls {
       const _: () = {
         impl Type for $ty {
           type Ref<'a> = SliceRef<'a>;
-          type Error = BufferTooSmall;
+          type Error = InsufficientBuffer;
 
           #[inline]
           fn encoded_len(&self) -> usize {
@@ -22,7 +22,7 @@ macro_rules! impls {
             let buf_len = buf.len();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(BufferTooSmall::new(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len, buf_len));
             }
 
             buf.copy_from_slice(self.as_ref());
@@ -34,7 +34,7 @@ macro_rules! impls {
             let buf_len = buf.capacity();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(BufferTooSmall::new(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len, buf_len));
             }
 
             buf.put_slice_unchecked(self.as_ref());
@@ -91,7 +91,7 @@ pub struct SliceRef<'a>(&'a [u8]);
 impl<'a> SliceRef<'a> {
   /// Returns the inner bytes slice.
   #[inline]
-  pub const fn as_bytes(&self) -> &[u8] {
+  pub const fn as_bytes(&self) -> &'a [u8] {
     self.0
   }
 }
@@ -209,7 +209,7 @@ where
 impl Type for [u8] {
   type Ref<'a> = SliceRef<'a>;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -221,7 +221,7 @@ impl Type for [u8] {
     let buf_len = buf.len();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(BufferTooSmall::new(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(self_len, buf_len));
     }
 
     buf.copy_from_slice(self);
@@ -233,7 +233,7 @@ impl Type for [u8] {
     let buf_len = buf.capacity();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(BufferTooSmall::new(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(self_len, buf_len));
     }
 
     buf.put_slice_unchecked(self);
@@ -259,7 +259,7 @@ impl KeyRef<'_, [u8]> for [u8] {
 impl<const N: usize> Type for [u8; N] {
   type Ref<'a> = Self;
 
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline(always)]
   fn encoded_len(&self) -> usize {
@@ -270,7 +270,7 @@ impl<const N: usize> Type for [u8; N] {
     let buf_len = buf.len();
 
     if buf_len < N {
-      return Err(BufferTooSmall::new(N, buf_len));
+      return Err(InsufficientBuffer::with_information(N, buf_len));
     }
 
     buf[..N].copy_from_slice(self.as_ref());
@@ -281,7 +281,7 @@ impl<const N: usize> Type for [u8; N] {
     let buf_len = buf.capacity();
 
     if buf_len < N {
-      return Err(BufferTooSmall::new(N, buf_len));
+      return Err(InsufficientBuffer::with_information(N, buf_len));
     }
 
     buf.put_slice_unchecked(self.as_ref());
@@ -386,7 +386,7 @@ const _: () = {
 
   impl<const N: usize> Type for SmallVec<[u8; N]> {
     type Ref<'a> = SliceRef<'a>;
-    type Error = BufferTooSmall;
+    type Error = InsufficientBuffer;
 
     #[inline]
     fn encoded_len(&self) -> usize {
@@ -398,7 +398,7 @@ const _: () = {
       let buf_len = buf.len();
       let self_len = self.len();
       if buf_len < self_len {
-        return Err(BufferTooSmall::new(self_len, buf_len));
+        return Err(InsufficientBuffer::with_information(self_len, buf_len));
       }
 
       buf.copy_from_slice(self.as_ref());
@@ -410,7 +410,7 @@ const _: () = {
       let buf_len = buf.capacity();
       let self_len = self.len();
       if buf_len < self_len {
-        return Err(BufferTooSmall::new(self_len, buf_len));
+        return Err(InsufficientBuffer::with_information(self_len, buf_len));
       }
 
       buf.put_slice_unchecked(self.as_ref());

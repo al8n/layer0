@@ -6,33 +6,6 @@ pub use impls::*;
 
 use crate::buffer::VacantBuffer;
 
-/// Returned when the encoded buffer is too small to hold the bytes format of the [`Type`].
-#[derive(Debug)]
-pub struct BufferTooSmall {
-  required: usize,
-  actual: usize,
-}
-
-impl BufferTooSmall {
-  /// Creates a new instance of the error.
-  #[inline]
-  const fn new(required: usize, actual: usize) -> Self {
-    Self { required, actual }
-  }
-}
-
-impl core::fmt::Display for BufferTooSmall {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(
-      f,
-      "buffer is too small: required {} bytes, actual {} bytes",
-      self.required, self.actual
-    )
-  }
-}
-
-impl core::error::Error for BufferTooSmall {}
-
 /// The type trait for limiting the types that can be used as keys and values.
 pub trait Type: core::fmt::Debug {
   /// The reference type for the type.

@@ -185,7 +185,7 @@ pub struct VacantBuffer<'a> {
 }
 
 #[cfg(feature = "tracing")]
-impl<'a> Drop for VacantBuffer<'a> {
+impl Drop for VacantBuffer<'_> {
   fn drop(&mut self) {
     let remaining = self.cap - self.len;
     if remaining > 0 {
@@ -197,7 +197,7 @@ impl<'a> Drop for VacantBuffer<'a> {
   }
 }
 
-impl<'a> VacantBuffer<'a> {
+impl VacantBuffer<'_> {
   /// Fill the remaining space with the given byte.
   #[inline]
   pub fn fill(&mut self, byte: u8) {
@@ -375,7 +375,7 @@ impl<'a> VacantBuffer<'a> {
   }
 }
 
-impl<'a> core::ops::Deref for VacantBuffer<'a> {
+impl core::ops::Deref for VacantBuffer<'_> {
   type Target = [u8];
 
   fn deref(&self) -> &Self::Target {
@@ -387,7 +387,7 @@ impl<'a> core::ops::Deref for VacantBuffer<'a> {
   }
 }
 
-impl<'a> core::ops::DerefMut for VacantBuffer<'a> {
+impl core::ops::DerefMut for VacantBuffer<'_> {
   fn deref_mut(&mut self) -> &mut Self::Target {
     if self.cap == 0 {
       return &mut [];
@@ -397,31 +397,31 @@ impl<'a> core::ops::DerefMut for VacantBuffer<'a> {
   }
 }
 
-impl<'a> AsRef<[u8]> for VacantBuffer<'a> {
+impl AsRef<[u8]> for VacantBuffer<'_> {
   fn as_ref(&self) -> &[u8] {
     self
   }
 }
 
-impl<'a> AsMut<[u8]> for VacantBuffer<'a> {
+impl AsMut<[u8]> for VacantBuffer<'_> {
   fn as_mut(&mut self) -> &mut [u8] {
     self
   }
 }
 
-impl<'a> Borrow<[u8]> for VacantBuffer<'a> {
+impl Borrow<[u8]> for VacantBuffer<'_> {
   fn borrow(&self) -> &[u8] {
     self
   }
 }
 
-impl<'a> BorrowMut<[u8]> for VacantBuffer<'a> {
+impl BorrowMut<[u8]> for VacantBuffer<'_> {
   fn borrow_mut(&mut self) -> &mut [u8] {
     self
   }
 }
 
-impl<'a, Q> Equivalent<Q> for VacantBuffer<'a>
+impl<Q> Equivalent<Q> for VacantBuffer<'_>
 where
   [u8]: Borrow<Q>,
   Q: ?Sized + Eq,
@@ -431,7 +431,7 @@ where
   }
 }
 
-impl<'a, Q> Comparable<Q> for VacantBuffer<'a>
+impl<Q> Comparable<Q> for VacantBuffer<'_>
 where
   [u8]: Borrow<Q>,
   Q: ?Sized + Ord,
@@ -441,7 +441,7 @@ where
   }
 }
 
-impl<'a, Q> PartialEq<Q> for VacantBuffer<'a>
+impl<Q> PartialEq<Q> for VacantBuffer<'_>
 where
   [u8]: Borrow<Q>,
   Q: ?Sized + Eq,
@@ -451,7 +451,7 @@ where
   }
 }
 
-impl<'a, Q> PartialOrd<Q> for VacantBuffer<'a>
+impl<Q> PartialOrd<Q> for VacantBuffer<'_>
 where
   [u8]: Borrow<Q>,
   Q: ?Sized + Ord,

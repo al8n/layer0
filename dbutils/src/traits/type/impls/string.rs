@@ -11,7 +11,7 @@ macro_rules! impls {
       const _: () = {
         impl Type for $ty {
           type Ref<'a> = Str<'a>;
-          type Error = BufferTooSmall;
+          type Error = InsufficientBuffer;
 
           #[inline]
           fn encoded_len(&self) -> usize {
@@ -22,7 +22,7 @@ macro_rules! impls {
             let buf_len = buf.len();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(BufferTooSmall::new(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len, buf_len));
             }
 
             buf.copy_from_slice(self.as_bytes());
@@ -33,7 +33,7 @@ macro_rules! impls {
             let buf_len = buf.capacity();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(BufferTooSmall::new(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len, buf_len));
             }
 
             buf.put_slice_unchecked(self.as_bytes());
@@ -89,7 +89,7 @@ pub struct Str<'a>(&'a str);
 
 impl<'a> Str<'a> {
   /// Returns the inner str.
-  pub const fn as_str(&self) -> &str {
+  pub const fn as_str(&self) -> &'a str {
     self.0
   }
 }
@@ -182,7 +182,7 @@ impl PartialOrd<Str<'_>> for &str {
 
 impl Type for str {
   type Ref<'a> = Str<'a>;
-  type Error = BufferTooSmall;
+  type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
@@ -194,7 +194,7 @@ impl Type for str {
     let buf_len = buf.len();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(BufferTooSmall::new(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(self_len, buf_len));
     }
 
     buf.copy_from_slice(self.as_bytes());
@@ -206,7 +206,7 @@ impl Type for str {
     let buf_len = buf.capacity();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(BufferTooSmall::new(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(self_len, buf_len));
     }
 
     buf.put_slice_unchecked(self.as_bytes());

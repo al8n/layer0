@@ -113,7 +113,7 @@ impl<T: Copy, const N: usize> CheapClone for [T; N] {
   }
 }
 
-impl<'a, T> CheapClone for &'a T {
+impl<T> CheapClone for &T {
   fn cheap_clone(&self) -> Self {
     self
   }
