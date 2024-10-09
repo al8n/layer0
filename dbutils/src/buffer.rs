@@ -2,6 +2,7 @@ use core::{
   array::TryFromSliceError,
   borrow::{Borrow, BorrowMut},
   marker::PhantomData,
+  mem,
   ptr::{self, NonNull},
   slice,
 };
@@ -210,6 +211,88 @@ impl VacantBuffer<'_> {
       ptr::write_bytes(self.value.as_ptr(), byte, self.cap);
     }
     self.len = self.cap;
+  }
+
+  /// Splits the buffer into two at the given index.
+  ///
+  /// Afterwards `self` has capacity `cap - at`, and the returned
+  /// `VacantBuffer` has capacity `at`.
+  ///
+  /// This is an `O(1)` operation.
+  ///
+  /// ## Panics
+  ///
+  /// Panics if `at > cap`.
+  #[inline]
+  pub fn split_to(&mut self, at: usize) -> Self {
+    if at == 0 {
+      return Self::dangling();
+    }
+
+    if at == self.cap {
+      return mem::replace(self, Self::dangling());
+    }
+
+    assert!(
+      at <= self.cap,
+      "split_to out of bounds: {:?} <= {:?}",
+      at,
+      self.len,
+    );
+
+    let new = unsafe { VacantBuffer::new(self.cap - at, self.value.add(at)) };
+    self.cap = at;
+
+    match self.len.checked_sub(at) {
+      Some(len) => {
+        self.len = len;
+      }
+      None => {
+        self.len = 0;
+      }
+    }
+
+    mem::replace(self, new)
+  }
+
+  /// Splits the bytes into two at the given index.
+  ///
+  /// Afterwards `self` has the capacity `at`, and the returned `VacantBuffer`
+  /// has the capacity `cap - at`.
+  ///
+  /// This is an `O(1)` operation.
+  ///
+  /// ## Panics
+  ///
+  /// Panics if `at > cap`.
+  pub fn split_off(&mut self, at: usize) -> Self {
+    if at == 0 {
+      return mem::replace(self, Self::dangling());
+    }
+
+    if at == self.cap {
+      return Self::dangling();
+    }
+
+    assert!(
+      at <= self.cap,
+      "split_off out of bounds: {:?} <= {:?}",
+      at,
+      self.len,
+    );
+
+    let mut new = unsafe { VacantBuffer::new(self.cap - at, self.value.add(at)) };
+    self.cap = at;
+    match self.len.checked_sub(at) {
+      Some(len) => {
+        new.len = len;
+      }
+      None => {
+        new.len = 0;
+      }
+    }
+
+    new
   }
 
   /// Set the length of the vacant buffer.
