@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Information {
-  required: usize,
-  remaining: usize,
+  required: u64,
+  remaining: u64,
 }
 
 /// Returned when the encoded buffer is too small to hold the bytes format of the types.
@@ -20,7 +20,7 @@ impl InsufficientBuffer {
 
   /// Creates a new instance of the error with size information.
   #[inline]
-  pub const fn with_information(required: usize, remaining: usize) -> Self {
+  pub const fn with_information(required: u64, remaining: u64) -> Self {
     Self {
       info: Some(Information {
         required,
@@ -31,13 +31,13 @@ impl InsufficientBuffer {
 
   /// Returns the required size.
   #[inline]
-  pub fn required(&self) -> Option<usize> {
+  pub fn required(&self) -> Option<u64> {
     self.info.as_ref().map(|info| info.required)
   }
 
   /// Returns the remaining size.
   #[inline]
-  pub fn remaining(&self) -> Option<usize> {
+  pub fn remaining(&self) -> Option<u64> {
     self.info.as_ref().map(|info| info.remaining)
   }
 }
@@ -80,7 +80,7 @@ impl IncompleteBuffer {
 
   /// Creates a new instance of the error with size information.
   #[inline]
-  pub const fn with_information(required: usize, remaining: usize) -> Self {
+  pub const fn with_information(required: u64, remaining: u64) -> Self {
     Self {
       info: Some(Information {
         required,
@@ -91,13 +91,13 @@ impl IncompleteBuffer {
 
   /// Returns the required size.
   #[inline]
-  pub fn required(&self) -> Option<usize> {
+  pub fn required(&self) -> Option<u64> {
     self.info.as_ref().map(|info| info.required)
   }
 
   /// Returns the remaining size.
   #[inline]
-  pub fn remaining(&self) -> Option<usize> {
+  pub fn remaining(&self) -> Option<u64> {
     self.info.as_ref().map(|info| info.remaining)
   }
 }

@@ -22,7 +22,7 @@ macro_rules! impls {
             let buf_len = buf.len();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
             }
 
             buf.copy_from_slice(self.as_ref());
@@ -34,7 +34,7 @@ macro_rules! impls {
             let buf_len = buf.capacity();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
             }
 
             buf.put_slice_unchecked(self.as_ref());
@@ -221,7 +221,10 @@ impl Type for [u8] {
     let buf_len = buf.len();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        self_len as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.copy_from_slice(self);
@@ -233,7 +236,10 @@ impl Type for [u8] {
     let buf_len = buf.capacity();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        self_len as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.put_slice_unchecked(self);
@@ -270,7 +276,10 @@ impl<const N: usize> Type for [u8; N] {
     let buf_len = buf.len();
 
     if buf_len < N {
-      return Err(InsufficientBuffer::with_information(N, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        N as u64,
+        buf_len as u64,
+      ));
     }
 
     buf[..N].copy_from_slice(self.as_ref());
@@ -281,7 +290,10 @@ impl<const N: usize> Type for [u8; N] {
     let buf_len = buf.capacity();
 
     if buf_len < N {
-      return Err(InsufficientBuffer::with_information(N, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        N as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.put_slice_unchecked(self.as_ref());
@@ -398,7 +410,10 @@ const _: () = {
       let buf_len = buf.len();
       let self_len = self.len();
       if buf_len < self_len {
-        return Err(InsufficientBuffer::with_information(self_len, buf_len));
+        return Err(InsufficientBuffer::with_information(
+          self_len as u64,
+          buf_len as u64,
+        ));
       }
 
       buf.copy_from_slice(self.as_ref());
@@ -410,7 +425,10 @@ const _: () = {
       let buf_len = buf.capacity();
       let self_len = self.len();
       if buf_len < self_len {
-        return Err(InsufficientBuffer::with_information(self_len, buf_len));
+        return Err(InsufficientBuffer::with_information(
+          self_len as u64,
+          buf_len as u64,
+        ));
       }
 
       buf.put_slice_unchecked(self.as_ref());

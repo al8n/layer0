@@ -53,7 +53,7 @@ macro_rules! impl_numbers {
 
           let buf_len = buf.len();
           if buf_len < SIZE {
-            return Err($crate::error::InsufficientBuffer::with_information(SIZE, buf_len));
+            return Err($crate::error::InsufficientBuffer::with_information(SIZE as u64, buf_len as u64));
           }
 
           buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
@@ -66,7 +66,7 @@ macro_rules! impl_numbers {
 
           let buf_len = buf.capacity();
           if buf_len < SIZE {
-            return Err($crate::error::InsufficientBuffer::with_information(SIZE, buf_len));
+            return Err($crate::error::InsufficientBuffer::with_information(SIZE as u64, buf_len as u64));
           }
 
           buf.set_len(SIZE);
@@ -124,7 +124,10 @@ impl Type for f32 {
 
     let buf_len = buf.len();
     if buf_len < SIZE {
-      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SIZE as u64,
+        buf_len as u64,
+      ));
     }
 
     buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
@@ -137,7 +140,10 @@ impl Type for f32 {
 
     let buf_len = buf.capacity();
     if buf_len < SIZE {
-      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SIZE as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.put_f32_le_unchecked(*self);
@@ -170,7 +176,10 @@ impl Type for f64 {
 
     let buf_len = buf.len();
     if buf_len < SIZE {
-      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SIZE as u64,
+        buf_len as u64,
+      ));
     }
 
     buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
@@ -183,7 +192,10 @@ impl Type for f64 {
 
     let buf_len = buf.capacity();
     if buf_len < SIZE {
-      return Err(InsufficientBuffer::with_information(SIZE, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        SIZE as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.put_f64_le_unchecked(*self);
@@ -223,7 +235,10 @@ impl Type for bool {
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     if buf.capacity() < 1 {
-      return Err(InsufficientBuffer::with_information(1, buf.capacity()));
+      return Err(InsufficientBuffer::with_information(
+        1,
+        buf.capacity() as u64,
+      ));
     }
 
     buf.put_u8_unchecked(*self as u8);
@@ -270,7 +285,10 @@ impl Type for char {
   fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
     let len = self.len_utf8();
     if buf.len() < len {
-      return Err(InsufficientBuffer::with_information(len, buf.len()));
+      return Err(InsufficientBuffer::with_information(
+        len as u64,
+        buf.len() as u64,
+      ));
     }
     self.encode_utf8(buf);
     Ok(len)
@@ -280,7 +298,10 @@ impl Type for char {
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     let len = self.len_utf8();
     if buf.capacity() < len {
-      return Err(InsufficientBuffer::with_information(len, buf.capacity()));
+      return Err(InsufficientBuffer::with_information(
+        len as u64,
+        buf.capacity() as u64,
+      ));
     }
 
     let char_buf = [0; 4];

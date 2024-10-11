@@ -22,7 +22,7 @@ macro_rules! impls {
             let buf_len = buf.len();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
             }
 
             buf.copy_from_slice(self.as_bytes());
@@ -33,7 +33,7 @@ macro_rules! impls {
             let buf_len = buf.capacity();
             let self_len = self.len();
             if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len, buf_len));
+              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
             }
 
             buf.put_slice_unchecked(self.as_bytes());
@@ -194,7 +194,10 @@ impl Type for str {
     let buf_len = buf.len();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        self_len as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.copy_from_slice(self.as_bytes());
@@ -206,7 +209,10 @@ impl Type for str {
     let buf_len = buf.capacity();
     let self_len = self.len();
     if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(self_len, buf_len));
+      return Err(InsufficientBuffer::with_information(
+        self_len as u64,
+        buf_len as u64,
+      ));
     }
 
     buf.put_slice_unchecked(self.as_bytes());

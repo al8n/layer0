@@ -24,8 +24,8 @@ impl Type for Ipv4Addr {
 
     if buf_len < IPV4_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        IPV4_ENCODED_LEN,
-        buf_len,
+        IPV4_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -39,8 +39,8 @@ impl Type for Ipv4Addr {
 
     if buf_len < IPV4_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        IPV4_ENCODED_LEN,
-        buf_len,
+        IPV4_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -92,8 +92,8 @@ impl Type for Ipv6Addr {
 
     if buf_len < IPV6_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        IPV6_ENCODED_LEN,
-        buf_len,
+        IPV6_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -107,8 +107,8 @@ impl Type for Ipv6Addr {
 
     if buf_len < IPV6_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        IPV6_ENCODED_LEN,
-        buf_len,
+        IPV6_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -160,8 +160,8 @@ impl Type for SocketAddrV4 {
 
     if buf_len < SOCKET_V4_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        SOCKET_V4_ENCODED_LEN,
-        buf_len,
+        SOCKET_V4_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -176,8 +176,8 @@ impl Type for SocketAddrV4 {
 
     if buf_len < SOCKET_V4_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        SOCKET_V4_ENCODED_LEN,
-        buf_len,
+        SOCKET_V4_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -231,8 +231,8 @@ impl Type for SocketAddrV6 {
 
     if buf_len < SOCKET_V6_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        SOCKET_V6_ENCODED_LEN,
-        buf_len,
+        SOCKET_V6_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 
@@ -247,8 +247,8 @@ impl Type for SocketAddrV6 {
 
     if buf_len < SOCKET_V6_ENCODED_LEN {
       return Err(InsufficientBuffer::with_information(
-        SOCKET_V6_ENCODED_LEN,
-        buf_len,
+        SOCKET_V6_ENCODED_LEN as u64,
+        buf_len as u64,
       ));
     }
 

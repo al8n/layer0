@@ -64,7 +64,7 @@ macro_rules! impl_put_varint {
           let len = [< encoded_ $ty _varint_len >](value);
           let remaining = self.cap - self.len;
           if len > remaining {
-            return Err($crate::error::InsufficientBuffer::with_information(len, remaining));
+            return Err($crate::error::InsufficientBuffer::with_information(len as u64, remaining as u64));
           }
 
           // SAFETY: the value's ptr is aligned and the cap is the correct.
@@ -336,7 +336,10 @@ impl VacantBuffer<'_> {
     let len = bytes.len();
     let remaining = self.cap - self.len;
     if len > remaining {
-      return Err(InsufficientBuffer::with_information(remaining, len));
+      return Err(InsufficientBuffer::with_information(
+        remaining as u64,
+        len as u64,
+      ));
     }
 
     // SAFETY: the value's ptr is aligned and the cap is the correct.
