@@ -237,6 +237,15 @@ where
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
     a.cmp(b)
   }
+
+  #[inline]
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
+  }
 }
 
 impl<'a, K> KeyRef<'a, K> for &'a str
@@ -255,6 +264,15 @@ where
   #[inline]
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
     a.cmp(b)
+  }
+
+  #[inline]
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
   }
 }
 

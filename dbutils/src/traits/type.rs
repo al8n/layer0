@@ -1,5 +1,8 @@
 mod impls;
-use core::cmp::{self, Reverse};
+use core::{
+  cmp::{self, Reverse},
+  ops::{Bound, RangeBounds},
+};
 
 use equivalent::Comparable;
 pub use impls::*;
@@ -94,9 +97,56 @@ pub trait KeyRef<'a, K: ?Sized>: Ord + Comparable<K> {
   where
     Q: ?Sized + Ord + Comparable<Self>;
 
+  /// Returns `true` if the key is contained in the range.
+  fn contains<R, Q>(&self, range: R) -> bool
+  where
+    R: RangeBounds<Q>,
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => Comparable::compare(start, self).is_le(),
+      Bound::Excluded(start) => Comparable::compare(start, self).is_lt(),
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => Comparable::compare(end, self).is_ge(),
+      Bound::Excluded(end) => Comparable::compare(end, self).is_gt(),
+      Bound::Unbounded => true,
+    };
+
+    // start <= self <= end
+    start && end
+  }
+
   /// Compares two binary formats of the `K` directly.
   ///
   /// ## Safety
   /// - The `a` and `b` must be the same as the one returned by [`K::encode`](Type::encode).
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering;
+
+  /// Returns `true` if the key is contained in the range.
+  ///
+  /// ## Safety
+  /// - The `key`, `start_bound` and `end_bound` must be the same as the one returned by [`K::encode`](Type::encode).
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    let start = match start_bound {
+      Bound::Included(start) => Self::compare_binary(key, start).is_ge(),
+      Bound::Excluded(start) => Self::compare_binary(key, start).is_gt(),
+      Bound::Unbounded => true,
+    };
+
+    let end = match end_bound {
+      Bound::Included(end) => Self::compare_binary(key, end).is_le(),
+      Bound::Excluded(end) => Self::compare_binary(key, end).is_lt(),
+      Bound::Unbounded => true,
+    };
+
+    // start <= self <= end
+    start && end
+  }
 }
