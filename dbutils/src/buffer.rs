@@ -198,6 +198,27 @@ impl Drop for VacantBuffer<'_> {
   }
 }
 
+impl<'a> From<&'a mut [u8]> for VacantBuffer<'a> {
+  #[inline]
+  fn from(buf: &'a mut [u8]) -> Self {
+    let len = buf.len();
+    let ptr = buf.as_mut_ptr();
+    unsafe { Self::new(len, NonNull::new_unchecked(ptr)) }
+  }
+}
+
+impl<'a> VacantBuffer<'a> {
+  /// Returns the slice of the vacant value. The lifetime is bound to the buffer.
+  #[inline]
+  pub fn as_slice(&self) -> &'a [u8] {
+    if self.cap == 0 {
+      return &[];
+    }
+
+    unsafe { slice::from_raw_parts(self.value.as_ptr(), self.len) }
+  }
+}
+
 impl VacantBuffer<'_> {
   /// Fill the remaining space with the given byte.
   #[inline]

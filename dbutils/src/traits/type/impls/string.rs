@@ -39,6 +39,11 @@ macro_rules! impls {
             buf.put_slice_unchecked(self.as_bytes());
             Ok(self_len)
           }
+
+          #[inline]
+          fn as_encoded(&self) -> Option<&[u8]> {
+            Some(self.as_bytes())
+          }
         }
 
         impl Equivalent<Str<'_>> for $ty {
@@ -218,6 +223,11 @@ impl Type for str {
     buf.put_slice_unchecked(self.as_bytes());
     Ok(self_len)
   }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    Some(self.as_bytes())
+  }
 }
 
 impl<'a, K> KeyRef<'a, K> for Str<'a>
@@ -263,6 +273,30 @@ where
 
   #[inline]
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
+    a.cmp(b)
+  }
+
+  #[inline]
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
+  }
+}
+
+impl KeyRef<'_, str> for str {
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
     a.cmp(b)
   }
 

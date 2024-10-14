@@ -13,7 +13,7 @@ description = "Utils for developing databases"
 [features]
 default = ["std", "cheap-clone/default"]
 alloc = ["cheap-clone/alloc"]
-std = ["alloc", "cheap-clone/std", "crc32fast?/std", "xxhash-rust?/std"]
+std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std"]
 
 among = ["cheap-clone/among"]
 bytes = ["dep:bytes", "cheap-clone/bytes"]
@@ -28,6 +28,7 @@ xxhash3 = ["xxhash-rust/xxh3"]
 
 [dependencies]
 equivalent = "1"
+either = { version = "1", default-features = false }
 cheap-clone = { version = "0.1", path = "../cheap-clone", default-features = false }
 paste = "1"
 

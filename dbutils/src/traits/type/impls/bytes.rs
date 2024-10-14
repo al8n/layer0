@@ -40,6 +40,11 @@ macro_rules! impls {
             buf.put_slice_unchecked(self.as_ref());
             Ok(self_len)
           }
+
+          #[inline]
+          fn as_encoded(&self) -> Option<&[u8]> {
+            Some(self.as_ref())
+          }
         }
 
         impl Equivalent<SliceRef<'_>> for $ty {
@@ -263,6 +268,11 @@ impl Type for [u8] {
     buf.put_slice_unchecked(self);
     Ok(self_len)
   }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    Some(self)
+  }
 }
 
 impl KeyRef<'_, [u8]> for [u8] {
@@ -325,6 +335,11 @@ impl<const N: usize> Type for [u8; N] {
 
     buf.put_slice_unchecked(self.as_ref());
     Ok(N)
+  }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    Some(self.as_ref())
   }
 }
 
@@ -469,6 +484,11 @@ const _: () = {
 
       buf.put_slice_unchecked(self.as_ref());
       Ok(self_len)
+    }
+
+    #[inline]
+    fn as_encoded(&self) -> Option<&[u8]> {
+      Some(self.as_ref())
     }
   }
 

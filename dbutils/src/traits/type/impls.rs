@@ -28,6 +28,11 @@ impl Type for () {
   fn encode_to_buffer(&self, _buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     Ok(0)
   }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    Some(&[])
+  }
 }
 
 impl TypeRef<'_> for () {

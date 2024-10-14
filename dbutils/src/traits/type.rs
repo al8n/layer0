@@ -4,7 +4,8 @@ use core::{
   ops::{Bound, RangeBounds},
 };
 
-use equivalent::Comparable;
+use either::Either;
+use equivalent::{Comparable, Equivalent};
 pub use impls::*;
 
 use crate::buffer::VacantBuffer;
@@ -20,12 +21,15 @@ pub trait Type: core::fmt::Debug {
   /// Returns the length of the encoded type size.
   fn encoded_len(&self) -> usize;
 
-  /// Encodes the type into a bytes slice, you can assume that the buf length is larger or equal to the value returned by [`encoded_len`](Type::encoded_len).
+  /// Encodes the type into a bytes slice.
   ///
   /// Returns the number of bytes written to the buffer.
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error>;
+  #[inline]
+  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+    self.encode_to_buffer(&mut VacantBuffer::from(buf))
+  }
 
-  /// Encodes the type into a [`VacantBuffer`], you can assume that the buf length is larger or equal to the value returned by [`encoded_len`](Type::encoded_len).
+  /// Encodes the type into a [`VacantBuffer`].
   ///
   /// Returns the number of bytes written to the buffer.
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error>;
@@ -38,6 +42,14 @@ pub trait Type: core::fmt::Debug {
     let mut buf = ::std::vec![0; self.encoded_len()];
     self.encode(&mut buf)?;
     Ok(buf)
+  }
+
+  /// Returns the bytes format of the type, which should be the same as the one returned by [`encode`](Type::encode).
+  ///
+  /// This method is used for some types like `[u8]`, `str` can be directly converted into the bytes format.
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    None
   }
 }
 
@@ -59,6 +71,11 @@ impl<T: Type> Type for &T {
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     T::encode_to_buffer(self, buf)
   }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    T::as_encoded(*self)
+  }
 }
 
 impl<T: Type> Type for Reverse<T> {
@@ -79,10 +96,15 @@ impl<T: Type> Type for Reverse<T> {
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     self.0.encode_to_buffer(buf)
   }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    self.0.as_encoded()
+  }
 }
 
 /// The reference type trait for the [`Type`] trait.
-pub trait TypeRef<'a>: core::fmt::Debug {
+pub trait TypeRef<'a>: core::fmt::Debug + Copy + Sized {
   /// Creates a reference type from a bytes slice.
   ///
   /// ## Safety
@@ -148,5 +170,176 @@ pub trait KeyRef<'a, K: ?Sized>: Ord + Comparable<K> {
 
     // start <= self <= end
     start && end
+  }
+}
+
+/// A wrapper around a generic type that can be used to construct for insertion.
+#[repr(transparent)]
+#[derive(Debug)]
+pub struct MaybeStructured<'a, T: ?Sized> {
+  data: Either<&'a T, &'a [u8]>,
+}
+
+impl<'a, T: 'a> PartialEq<T> for MaybeStructured<'a, T>
+where
+  T: ?Sized + PartialEq + Type + for<'b> Equivalent<T::Ref<'b>>,
+{
+  #[inline]
+  fn eq(&self, other: &T) -> bool {
+    match &self.data {
+      Either::Left(val) => (*val).eq(other),
+      Either::Right(val) => {
+        let ref_ = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(val) };
+        other.equivalent(&ref_)
+      }
+    }
+  }
+}
+
+impl<'a, T: 'a> PartialEq for MaybeStructured<'a, T>
+where
+  T: ?Sized + PartialEq + Type + for<'b> Equivalent<T::Ref<'b>>,
+{
+  #[inline]
+  fn eq(&self, other: &Self) -> bool {
+    match (&self.data, &other.data) {
+      (Either::Left(val), Either::Left(other_val)) => val.eq(other_val),
+      (Either::Right(val), Either::Right(other_val)) => val.eq(other_val),
+      (Either::Left(val), Either::Right(other_val)) => {
+        let ref_ = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(other_val) };
+        val.equivalent(&ref_)
+      }
+      (Either::Right(val), Either::Left(other_val)) => {
+        let ref_ = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(val) };
+        other_val.equivalent(&ref_)
+      }
+    }
+  }
+}
+
+impl<'a, T: 'a> Eq for MaybeStructured<'a, T> where
+  T: ?Sized + Eq + Type + for<'b> Equivalent<T::Ref<'b>>
+{
+}
+
+impl<'a, T: 'a> PartialOrd for MaybeStructured<'a, T>
+where
+  T: ?Sized + Ord + Type + for<'b> Comparable<T::Ref<'b>>,
+  for<'b> T::Ref<'b>: Comparable<T> + Ord,
+{
+  #[inline]
+  fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
+impl<'a, T: 'a> PartialOrd<T> for MaybeStructured<'a, T>
+where
+  T: ?Sized + PartialOrd + Type + for<'b> Comparable<T::Ref<'b>>,
+{
+  #[inline]
+  fn partial_cmp(&self, other: &T) -> Option<core::cmp::Ordering> {
+    match &self.data {
+      Either::Left(val) => (*val).partial_cmp(other),
+      Either::Right(val) => {
+        let ref_ = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(val) };
+        Some(other.compare(&ref_).reverse())
+      }
+    }
+  }
+}
+
+impl<'a, T: 'a> Ord for MaybeStructured<'a, T>
+where
+  T: ?Sized + Ord + Type + for<'b> Comparable<T::Ref<'b>>,
+  for<'b> T::Ref<'b>: Comparable<T> + Ord,
+{
+  #[inline]
+  fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+    match (&self.data, &other.data) {
+      (Either::Left(val), Either::Left(other_val)) => (*val).cmp(other_val),
+      (Either::Right(val), Either::Right(other_val)) => {
+        let this = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(val) };
+        let other = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(other_val) };
+        this.cmp(&other)
+      }
+      (Either::Left(val), Either::Right(other_val)) => {
+        let other = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(other_val) };
+        other.compare(*val).reverse()
+      }
+      (Either::Right(val), Either::Left(other_val)) => {
+        let this = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(val) };
+        this.compare(*other_val)
+      }
+    }
+  }
+}
+
+impl<'a, T: 'a + Type + ?Sized> MaybeStructured<'a, T> {
+  /// Returns the encoded length.
+  #[inline]
+  pub fn encoded_len(&self) -> usize {
+    match &self.data {
+      Either::Left(val) => val.encoded_len(),
+      Either::Right(val) => val.len(),
+    }
+  }
+
+  /// Encodes the generic into the buffer.
+  ///
+  /// ## Panics
+  /// - if the buffer is not large enough.
+  #[inline]
+  pub fn encode(&self, buf: &mut [u8]) -> Result<usize, T::Error> {
+    match &self.data {
+      Either::Left(val) => val.encode(buf),
+      Either::Right(val) => {
+        buf.copy_from_slice(val);
+        Ok(buf.len())
+      }
+    }
+  }
+
+  /// Encodes the generic into the given buffer.
+  ///
+  /// ## Panics
+  /// - if the buffer is not large enough.
+  #[inline]
+  pub fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, T::Error> {
+    match &self.data {
+      Either::Left(val) => val.encode_to_buffer(buf),
+      Either::Right(val) => {
+        buf.put_slice_unchecked(val);
+        Ok(buf.len())
+      }
+    }
+  }
+}
+
+impl<'a, T: 'a + ?Sized> MaybeStructured<'a, T> {
+  /// Returns the value contained in the generic.
+  #[inline]
+  pub const fn data(&self) -> Either<&'a T, &'a [u8]> {
+    self.data
+  }
+
+  /// Creates a new generic from bytes for querying or inserting into the [`MaybeStructuredOrderWal`](crate::swmr::MaybeStructuredOrderWal).
+  ///
+  /// ## Safety
+  /// - the `slice` must the same as the one returned by [`T::encode`](Type::encode).
+  #[inline]
+  pub const unsafe fn from_slice(slice: &'a [u8]) -> Self {
+    Self {
+      data: Either::Right(slice),
+    }
+  }
+}
+
+impl<'a, T: 'a + ?Sized> From<&'a T> for MaybeStructured<'a, T> {
+  #[inline]
+  fn from(value: &'a T) -> Self {
+    Self {
+      data: Either::Left(value),
+    }
   }
 }
