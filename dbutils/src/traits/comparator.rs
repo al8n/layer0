@@ -1,9 +1,12 @@
 use core::{
   cmp::{self, Reverse},
+  marker::PhantomData,
   ops::{Bound, RangeBounds},
 };
 
 use cheap_clone::CheapClone;
+
+use super::{KeyRef, Type};
 
 /// StaticComparator is used for key-value database developers to define their own key comparison logic.
 /// e.g. some key-value database developers may want to alpabetically comparation.
@@ -15,6 +18,22 @@ pub trait StaticComparator: core::fmt::Debug {
 
   /// Returns if a is contained in range.
   fn contains(start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool;
+}
+
+impl<K> StaticComparator for PhantomData<K>
+where
+  K: Type,
+  for<'a> K::Ref<'a>: KeyRef<'a, K>,
+{
+  #[inline]
+  fn compare(a: &[u8], b: &[u8]) -> cmp::Ordering {
+    unsafe { <K::Ref<'_> as KeyRef<'_, K>>::compare_binary(a, b) }
+  }
+
+  #[inline]
+  fn contains(start_bound: Bound<&[u8]>, end_bound: Bound<&[u8]>, key: &[u8]) -> bool {
+    unsafe { <K::Ref<'_> as KeyRef<'_, K>>::contains_binary(start_bound, end_bound, key) }
+  }
 }
 
 impl<T: StaticComparator> Comparator for T {

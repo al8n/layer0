@@ -24,7 +24,10 @@ pub mod error;
 
 /// Some traits may be useful.
 pub mod traits;
-pub use traits::comparator::{Ascend, Comparator, Descend, StaticComparator};
+pub use traits::{
+  comparator::{Ascend, Comparator, Descend, StaticComparator},
+  ComparableRangeBounds,
+};
 
 #[doc(inline)]
 pub use equivalent;

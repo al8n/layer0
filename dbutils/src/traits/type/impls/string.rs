@@ -39,6 +39,43 @@ macro_rules! impls {
             buf.put_slice_unchecked(self.as_bytes());
             Ok(self_len)
           }
+
+          #[inline]
+          fn as_encoded(&self) -> Option<&[u8]> {
+            Some(self.as_bytes())
+          }
+        }
+
+        impl PartialEq<Str<'_>> for $ty {
+          #[inline]
+          fn eq(&self, other: &Str<'_>) -> bool {
+            let this: &str = self.as_ref();
+            this == other.0
+          }
+        }
+
+        impl PartialEq<$ty> for Str<'_> {
+          #[inline]
+          fn eq(&self, other: &$ty) -> bool {
+            let this: &str = other.as_ref();
+            self.0 == this
+          }
+        }
+
+        impl PartialEq<Str<'_>> for &$ty {
+          #[inline]
+          fn eq(&self, other: &Str<'_>) -> bool {
+            let this: &str = self.as_ref();
+            this == other.0
+          }
+        }
+
+        impl PartialEq<&$ty> for Str<'_> {
+          #[inline]
+          fn eq(&self, other: &&$ty) -> bool {
+            let this: &str = other.as_ref();
+            self.0 == this
+          }
         }
 
         impl Equivalent<Str<'_>> for $ty {
@@ -68,6 +105,38 @@ macro_rules! impls {
         impl Comparable<$ty> for Str<'_> {
           #[inline]
           fn compare(&self, other: &$ty) -> cmp::Ordering {
+            let that: &str = other.as_ref();
+            self.0.cmp(that)
+          }
+        }
+
+        impl Equivalent<Str<'_>> for &$ty {
+          #[inline]
+          fn equivalent(&self, key: &Str<'_>) -> bool {
+            let this: &str = self.as_ref();
+            this.eq(key.0)
+          }
+        }
+
+        impl Comparable<Str<'_>> for &$ty {
+          #[inline]
+          fn compare(&self, other: &Str<'_>) -> cmp::Ordering {
+            let this: &str = self.as_ref();
+            this.cmp(other.0)
+          }
+        }
+
+        impl Equivalent<&$ty> for Str<'_> {
+          #[inline]
+          fn equivalent(&self, key: &&$ty) -> bool {
+            let that: &str = key.as_ref();
+            self.0.eq(that)
+          }
+        }
+
+        impl Comparable<&$ty> for Str<'_> {
+          #[inline]
+          fn compare(&self, other: &&$ty) -> cmp::Ordering {
             let that: &str = other.as_ref();
             self.0.cmp(that)
           }
@@ -144,18 +213,6 @@ impl PartialEq<Str<'_>> for str {
   }
 }
 
-impl PartialEq<&str> for Str<'_> {
-  fn eq(&self, other: &&str) -> bool {
-    self.0 == *other
-  }
-}
-
-impl PartialEq<Str<'_>> for &str {
-  fn eq(&self, other: &Str<'_>) -> bool {
-    *self == other.0
-  }
-}
-
 impl PartialOrd<str> for Str<'_> {
   fn partial_cmp(&self, other: &str) -> Option<cmp::Ordering> {
     Some(self.0.cmp(other))
@@ -218,6 +275,11 @@ impl Type for str {
     buf.put_slice_unchecked(self.as_bytes());
     Ok(self_len)
   }
+
+  #[inline]
+  fn as_encoded(&self) -> Option<&[u8]> {
+    Some(self.as_bytes())
+  }
 }
 
 impl<'a, K> KeyRef<'a, K> for Str<'a>
@@ -236,6 +298,15 @@ where
   #[inline]
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
     a.cmp(b)
+  }
+
+  #[inline]
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
   }
 }
 
@@ -256,12 +327,59 @@ where
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
     a.cmp(b)
   }
+
+  #[inline]
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
+  }
+}
+
+impl KeyRef<'_, str> for str {
+  #[inline]
+  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
+  where
+    Q: ?Sized + Ord + Comparable<Self>,
+  {
+    Comparable::compare(a, self).reverse()
+  }
+
+  #[inline]
+  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
+    a.cmp(b)
+  }
+
+  #[inline]
+  unsafe fn contains_binary(
+    start_bound: Bound<&[u8]>,
+    end_bound: Bound<&[u8]>,
+    key: &[u8],
+  ) -> bool {
+    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
+  }
+}
+
+impl Equivalent<str> for Str<'_> {
+  #[inline]
+  fn equivalent(&self, key: &str) -> bool {
+    self.0 == key
+  }
+}
+
+impl Comparable<str> for Str<'_> {
+  #[inline]
+  fn compare(&self, key: &str) -> cmp::Ordering {
+    self.0.cmp(key)
+  }
 }
 
 impls! {
   #[cfg(feature = "alloc")]
   ::std::borrow::Cow<'_, str>,
-  &'static str,
+  &str,
   #[cfg(feature = "alloc")]
   ::std::string::String,
   #[cfg(feature = "alloc")]
@@ -273,32 +391,3 @@ impls! {
   #[cfg(feature = "faststr")]
   ::faststr::FastStr,
 }
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-const _: () = {
-  use std::string::String;
-
-  impl PartialEq<String> for Str<'_> {
-    fn eq(&self, other: &String) -> bool {
-      self.0 == other
-    }
-  }
-
-  impl PartialEq<Str<'_>> for String {
-    fn eq(&self, other: &Str<'_>) -> bool {
-      self == other.0
-    }
-  }
-
-  impl PartialEq<&String> for Str<'_> {
-    fn eq(&self, other: &&String) -> bool {
-      self.0 == *other
-    }
-  }
-
-  impl PartialEq<Str<'_>> for &String {
-    fn eq(&self, other: &Str<'_>) -> bool {
-      *self == other.0
-    }
-  }
-};
