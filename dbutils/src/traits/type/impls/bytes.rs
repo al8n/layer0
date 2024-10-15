@@ -47,6 +47,38 @@ macro_rules! impls {
           }
         }
 
+        impl PartialEq<SliceRef<'_>> for $ty {
+          #[inline]
+          fn eq(&self, other: &SliceRef<'_>) -> bool {
+            let this: &[u8] = self.as_ref();
+            this == other.0
+          }
+        }
+
+        impl PartialEq<$ty> for SliceRef<'_> {
+          #[inline]
+          fn eq(&self, other: &$ty) -> bool {
+            let this: &[u8] = other.as_ref();
+            self.0 == this
+          }
+        }
+
+        impl PartialEq<SliceRef<'_>> for &$ty {
+          #[inline]
+          fn eq(&self, other: &SliceRef<'_>) -> bool {
+            let this: &[u8] = self.as_ref();
+            this == other.0
+          }
+        }
+
+        impl PartialEq<&$ty> for SliceRef<'_> {
+          #[inline]
+          fn eq(&self, other: &&$ty) -> bool {
+            let this: &[u8] = other.as_ref();
+            self.0 == this
+          }
+        }
+
         impl Equivalent<SliceRef<'_>> for $ty {
           #[inline]
           fn equivalent(&self, key: &SliceRef<'_>) -> bool {
@@ -78,6 +110,38 @@ macro_rules! impls {
             self.0.cmp(that)
           }
         }
+
+        impl Equivalent<SliceRef<'_>> for &$ty {
+          #[inline]
+          fn equivalent(&self, key: &SliceRef<'_>) -> bool {
+            let this: &[u8] = self.as_ref();
+            this.eq(key.0)
+          }
+        }
+
+        impl Comparable<SliceRef<'_>> for &$ty {
+          #[inline]
+          fn compare(&self, other: &SliceRef<'_>) -> cmp::Ordering {
+            let this: &[u8] = self.as_ref();
+            this.cmp(other.0)
+          }
+        }
+
+        impl Equivalent<&$ty> for SliceRef<'_> {
+          #[inline]
+          fn equivalent(&self, key: &&$ty) -> bool {
+            let that: &[u8] = key.as_ref();
+            self.0.eq(that)
+          }
+        }
+
+        impl Comparable<&$ty> for SliceRef<'_> {
+          #[inline]
+          fn compare(&self, other: &&$ty) -> cmp::Ordering {
+            let that: &[u8] = other.as_ref();
+            self.0.cmp(that)
+          }
+        }
       };
     )*
   };
@@ -91,6 +155,7 @@ impl<'a> TypeRef<'a> for &'a [u8] {
 
 /// A wrapper type for `&'a [u8]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct SliceRef<'a>(&'a [u8]);
 
 impl<'a> SliceRef<'a> {
@@ -152,24 +217,10 @@ impl PartialEq<[u8]> for SliceRef<'_> {
   }
 }
 
-impl PartialEq<&[u8]> for SliceRef<'_> {
-  #[inline]
-  fn eq(&self, other: &&[u8]) -> bool {
-    self.0 == *other
-  }
-}
-
 impl PartialEq<SliceRef<'_>> for [u8] {
   #[inline]
   fn eq(&self, other: &SliceRef<'_>) -> bool {
     self == other.0
-  }
-}
-
-impl PartialEq<SliceRef<'_>> for &[u8] {
-  #[inline]
-  fn eq(&self, other: &SliceRef<'_>) -> bool {
-    *self == other.0
   }
 }
 
@@ -299,6 +350,20 @@ impl KeyRef<'_, [u8]> for [u8] {
   }
 }
 
+impl Equivalent<[u8]> for SliceRef<'_> {
+  #[inline]
+  fn equivalent(&self, key: &[u8]) -> bool {
+    self.0 == key
+  }
+}
+
+impl Comparable<[u8]> for SliceRef<'_> {
+  #[inline]
+  fn compare(&self, key: &[u8]) -> cmp::Ordering {
+    self.0.cmp(key)
+  }
+}
+
 impl<const N: usize> Type for [u8; N] {
   type Ref<'a> = Self;
 
@@ -376,10 +441,66 @@ impl<const N: usize> KeyRef<'_, [u8; N]> for [u8; N] {
   }
 }
 
+impl<const N: usize> Equivalent<[u8; N]> for SliceRef<'_> {
+  #[inline]
+  fn equivalent(&self, key: &[u8; N]) -> bool {
+    self.0 == key
+  }
+}
+
+impl<const N: usize> Comparable<[u8; N]> for SliceRef<'_> {
+  #[inline]
+  fn compare(&self, key: &[u8; N]) -> cmp::Ordering {
+    self.0.cmp(key)
+  }
+}
+
+impl<const N: usize> Equivalent<SliceRef<'_>> for [u8; N] {
+  #[inline]
+  fn equivalent(&self, key: &SliceRef<'_>) -> bool {
+    self == key.0
+  }
+}
+
+impl<const N: usize> Comparable<SliceRef<'_>> for [u8; N] {
+  #[inline]
+  fn compare(&self, key: &SliceRef<'_>) -> cmp::Ordering {
+    self.as_ref().cmp(key.0)
+  }
+}
+
+impl<const N: usize> PartialEq<SliceRef<'_>> for [u8; N] {
+  #[inline]
+  fn eq(&self, other: &SliceRef<'_>) -> bool {
+    self.as_ref() == other.0
+  }
+}
+
+impl<const N: usize> PartialEq<[u8; N]> for SliceRef<'_> {
+  #[inline]
+  fn eq(&self, other: &[u8; N]) -> bool {
+    self.0 == other.as_ref()
+  }
+}
+
+impl<const N: usize> PartialEq<SliceRef<'_>> for &[u8; N] {
+  #[inline]
+  fn eq(&self, other: &SliceRef<'_>) -> bool {
+    self.as_ref() == other.0
+  }
+}
+
+impl<const N: usize> PartialEq<&[u8; N]> for SliceRef<'_> {
+  #[inline]
+  fn eq(&self, other: &&[u8; N]) -> bool {
+    self.0 == other.as_ref()
+  }
+}
+
 impls! {
   #[cfg(feature = "alloc")]
   ::std::borrow::Cow<'_, [u8]>,
-  &'static [u8],
+  &[u8],
   #[cfg(feature = "alloc")]
   ::std::vec::Vec<u8>,
   #[cfg(feature = "alloc")]
@@ -407,39 +528,6 @@ impls! {
   #[cfg(feature = "smallvec-wrapper")]
   ::smallvec_wrapper::XXXLargeVec<u8>,
 }
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-const _: () = {
-  use std::vec::Vec;
-
-  impl PartialEq<Vec<u8>> for SliceRef<'_> {
-    #[inline]
-    fn eq(&self, other: &Vec<u8>) -> bool {
-      self.0 == other.as_slice()
-    }
-  }
-
-  impl PartialEq<&Vec<u8>> for SliceRef<'_> {
-    #[inline]
-    fn eq(&self, other: &&Vec<u8>) -> bool {
-      self.0 == other.as_slice()
-    }
-  }
-
-  impl PartialEq<SliceRef<'_>> for Vec<u8> {
-    #[inline]
-    fn eq(&self, other: &SliceRef<'_>) -> bool {
-      self.as_slice() == other.0
-    }
-  }
-
-  impl PartialEq<SliceRef<'_>> for &Vec<u8> {
-    #[inline]
-    fn eq(&self, other: &SliceRef<'_>) -> bool {
-      self.as_slice() == other.0
-    }
-  }
-};
 
 #[cfg(feature = "smallvec")]
 const _: () = {
@@ -492,21 +580,6 @@ const _: () = {
     }
   }
 
-  // impl<'a, const N: usize> KeyRef<'a, SmallVec<[u8; N]>> for SliceRef<'a> {
-  //   #[inline]
-  //   fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  //   where
-  //     Q: ?Sized + Ord + Comparable<Self>,
-  //   {
-  //     Comparable::compare(a, self).reverse()
-  //   }
-
-  //   #[inline]
-  //   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-  //     a.cmp(b)
-  //   }
-  // }
-
   impl<const N: usize> Equivalent<SliceRef<'_>> for SmallVec<[u8; N]> {
     #[inline]
     fn equivalent(&self, key: &SliceRef<'_>) -> bool {
@@ -536,6 +609,38 @@ const _: () = {
     fn compare(&self, other: &SmallVec<[u8; N]>) -> cmp::Ordering {
       let that: &[u8] = other.as_ref();
       self.0.cmp(that)
+    }
+  }
+
+  impl<const N: usize> PartialEq<SliceRef<'_>> for SmallVec<[u8; N]> {
+    #[inline]
+    fn eq(&self, other: &SliceRef<'_>) -> bool {
+      let this: &[u8] = self.as_ref();
+      this == other.0
+    }
+  }
+
+  impl<const N: usize> PartialEq<SmallVec<[u8; N]>> for SliceRef<'_> {
+    #[inline]
+    fn eq(&self, other: &SmallVec<[u8; N]>) -> bool {
+      let this: &[u8] = other.as_ref();
+      self.0 == this
+    }
+  }
+
+  impl<const N: usize> PartialEq<SliceRef<'_>> for &SmallVec<[u8; N]> {
+    #[inline]
+    fn eq(&self, other: &SliceRef<'_>) -> bool {
+      let this: &[u8] = self.as_ref();
+      this == other.0
+    }
+  }
+
+  impl<const N: usize> PartialEq<&SmallVec<[u8; N]>> for SliceRef<'_> {
+    #[inline]
+    fn eq(&self, other: &&SmallVec<[u8; N]>) -> bool {
+      let this: &[u8] = other.as_ref();
+      self.0 == this
     }
   }
 };
