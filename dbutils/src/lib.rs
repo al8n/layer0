@@ -56,7 +56,7 @@ pub mod __private {
 ///
 /// let builder = ValueBuilder::new(16, |mut buf: VacantBuffer<'_>| {
 ///   buf.fill(1);
-///   Ok::<(), core::convert::Infallible>(())
+///   Ok::<_, core::convert::Infallible>(buf.len())
 /// });
 ///
 /// assert_eq!(builder.size(), 16);
@@ -123,7 +123,7 @@ macro_rules! builder {
 
         impl<W, E> $crate::buffer::BufWriter for $name<W>
         where
-          W: ::core::ops::Fn(&mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), E>,
+          W: ::core::ops::Fn(&mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<usize, E>,
         {
           type Error = E;
 
@@ -133,14 +133,14 @@ macro_rules! builder {
           }
 
           #[inline]
-          fn write(&self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), Self::Error> {
+          fn write(&self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<usize, Self::Error> {
             self.builder()(buf)
           }
         }
 
         impl<W, E> $crate::buffer::BufWriterOnce for $name<W>
         where
-          W: ::core::ops::FnOnce(&mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), E>,
+          W: ::core::ops::FnOnce(&mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<usize, E>,
         {
           type Error = E;
 
@@ -150,7 +150,7 @@ macro_rules! builder {
           }
 
           #[inline]
-          fn write_once(self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), Self::Error> {
+          fn write_once(self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<usize, Self::Error> {
             self.into_components().1(buf)
           }
         }

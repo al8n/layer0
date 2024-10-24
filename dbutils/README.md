@@ -23,21 +23,21 @@ Utilities for developing databases.
   
   ```toml
   [dependencies]
-  dbutils = "0.7"
+  dbutils = "0.8"
   ```
 
 - Using in `no_std`
   
   ```toml
   [dependencies]
-  dbutils = { version = "0.7", default-features = false }
+  dbutils = { version = "0.8", default-features = false }
   ```
 
 - Using with `alloc` only
   
   ```toml
   [dependencies]
-  dbutils = { version = "0.7", default-features = false, features = ["alloc"] }
+  dbutils = { version = "0.8", default-features = false, features = ["alloc"] }
   ```
 
 ## Project Dependents

@@ -25,7 +25,9 @@ pub trait BufWriter {
   fn encoded_len(&self) -> usize;
 
   /// Encode self to bytes and write to the [`VacantBuffer`].
-  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error>;
+  ///
+  /// Returns the number of bytes written if successful.
+  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error>;
 }
 
 impl<A: Borrow<[u8]>> BufWriter for A {
@@ -37,8 +39,9 @@ impl<A: Borrow<[u8]>> BufWriter for A {
   }
 
   #[inline]
-  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
-    buf.put_slice(self.borrow())
+  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let src = self.borrow();
+    buf.put_slice(src).map(|_| src.len())
   }
 }
 
@@ -54,8 +57,8 @@ where
   }
 
   #[inline]
-  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
-    MaybeStructured::encode_to_buffer(self, buf).map(|_| ())
+  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    MaybeStructured::encode_to_buffer(self, buf)
   }
 }
 
@@ -68,7 +71,9 @@ pub trait BufWriterOnce {
   fn encoded_len(&self) -> usize;
 
   /// Encode self to bytes and write to the [`VacantBuffer`].
-  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error>;
+  ///
+  /// Returns the number of bytes written if successful.
+  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error>;
 }
 
 impl<A: Borrow<[u8]>> BufWriterOnce for A {
@@ -80,8 +85,9 @@ impl<A: Borrow<[u8]>> BufWriterOnce for A {
   }
 
   #[inline]
-  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
-    buf.put_slice(self.borrow())
+  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    let src = self.borrow();
+    buf.put_slice(src).map(|_| src.len())
   }
 }
 
@@ -97,8 +103,8 @@ where
   }
 
   #[inline]
-  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
-    MaybeStructured::encode_to_buffer(&self, buf).map(|_| ())
+  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+    MaybeStructured::encode_to_buffer(&self, buf)
   }
 }
 
