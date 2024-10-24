@@ -9,9 +9,98 @@ use core::{
 
 use equivalent::{Comparable, Equivalent};
 
-use crate::error::InsufficientBuffer;
+use crate::{
+  error::InsufficientBuffer,
+  traits::{MaybeStructured, Type},
+};
 
 use super::leb128::*;
+
+/// Writing self to the [`VacantBuffer`] in bytes format.
+pub trait BufWriter {
+  /// The error type.
+  type Error;
+
+  /// The length of the encoded bytes.
+  fn encoded_len(&self) -> usize;
+
+  /// Encode self to bytes and write to the [`VacantBuffer`].
+  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error>;
+}
+
+impl<A: Borrow<[u8]>> BufWriter for A {
+  type Error = InsufficientBuffer;
+
+  #[inline]
+  fn encoded_len(&self) -> usize {
+    self.borrow().len()
+  }
+
+  #[inline]
+  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
+    buf.put_slice(self.borrow())
+  }
+}
+
+impl<T: ?Sized + Type> BufWriter for MaybeStructured<'_, T>
+where
+  T: Type,
+{
+  type Error = T::Error;
+
+  #[inline]
+  fn encoded_len(&self) -> usize {
+    MaybeStructured::encoded_len(self)
+  }
+
+  #[inline]
+  fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
+    MaybeStructured::encode_to_buffer(self, buf).map(|_| ())
+  }
+}
+
+/// Like [`BufWriter`] but only write once.
+pub trait BufWriterOnce {
+  /// The error type.
+  type Error;
+
+  /// The length of the encoded bytes.
+  fn encoded_len(&self) -> usize;
+
+  /// Encode self to bytes and write to the [`VacantBuffer`].
+  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error>;
+}
+
+impl<A: Borrow<[u8]>> BufWriterOnce for A {
+  type Error = InsufficientBuffer;
+
+  #[inline]
+  fn encoded_len(&self) -> usize {
+    self.borrow().len()
+  }
+
+  #[inline]
+  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
+    buf.put_slice(self.borrow())
+  }
+}
+
+impl<T: ?Sized + Type> BufWriterOnce for MaybeStructured<'_, T>
+where
+  T: Type,
+{
+  type Error = T::Error;
+
+  #[inline]
+  fn encoded_len(&self) -> usize {
+    MaybeStructured::encoded_len(self)
+  }
+
+  #[inline]
+  fn write_once(self, buf: &mut VacantBuffer<'_>) -> Result<(), Self::Error> {
+    MaybeStructured::encode_to_buffer(&self, buf).map(|_| ())
+  }
+}
 
 macro_rules! impl_get_varint {
   ($($ty:ident), +$(,)?) => {

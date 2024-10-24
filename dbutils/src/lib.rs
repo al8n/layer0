@@ -51,7 +51,7 @@ pub mod __private {
 /// // Generates a builder type named `ValueBuilder` with a maximum size of `u32`.
 /// builder!(
 ///   /// A builder for a value
-///   ValueBuilder(u32)
+///   ValueBuilder;
 /// );
 ///
 /// let builder = ValueBuilder::new(16, |mut buf: VacantBuffer<'_>| {
@@ -65,7 +65,8 @@ pub mod __private {
 macro_rules! builder {
   ($(
     $(#[$meta:meta])*
-    $wrapper_vis:vis $name:ident($vis:vis $size:ident));+ $(;)?
+    $wrapper_vis:vis $name:ident
+   ); +$(;)?
   ) => {
     $(
       $crate::__private::paste::paste! {
@@ -73,19 +74,20 @@ macro_rules! builder {
         #[derive(::core::marker::Copy, ::core::clone::Clone, ::core::fmt::Debug)]
         $wrapper_vis struct $name <F> {
           /// The required size of the builder.
-          $vis size: $size,
+          $wrapper_vis size: usize,
+
           /// The builder closure.
-          $vis f: F,
+          $wrapper_vis f: F,
         }
 
-        impl<F> ::core::convert::From<($size, F)> for $name<F> {
+        impl<F> ::core::convert::From<(usize, F)> for $name<F> {
           #[inline]
-          fn from((size, f): ($size, F)) -> Self {
+          fn from((size, f): (usize, F)) -> Self {
             Self { size, f }
           }
         }
 
-        impl<F> ::core::convert::From<$name<F>> for ($size, F) {
+        impl<F> ::core::convert::From<$name<F>> for (usize, F) {
           #[inline]
           fn from(builder: $name<F>) -> Self {
             (builder.size, builder.f)
@@ -95,14 +97,14 @@ macro_rules! builder {
         impl<F> $name<F> {
           #[doc = "Creates a new `" $name "` with the given size and builder closure."]
           #[inline]
-          pub const fn new(size: $size, f: F) -> Self
+          pub const fn new(size: usize, f: F) -> Self
           {
             Self { size, f }
           }
 
           #[doc = "Returns the required `" $name "` size."]
           #[inline]
-          pub const fn size(&self) -> $size {
+          pub const fn size(&self) -> usize {
             self.size
           }
 
@@ -114,8 +116,42 @@ macro_rules! builder {
 
           /// Deconstructs the value builder into the size and the builder closure.
           #[inline]
-          pub fn into_components(self) -> ($size, F) {
+          pub fn into_components(self) -> (usize, F) {
             (self.size, self.f)
+          }
+        }
+
+        impl<W, E> $crate::buffer::BufWriter for $name<W>
+        where
+          W: ::core::ops::Fn(&mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), E>,
+        {
+          type Error = E;
+
+          #[inline]
+          fn encoded_len(&self) -> usize {
+            self.size()
+          }
+
+          #[inline]
+          fn write(&self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), Self::Error> {
+            self.builder()(buf)
+          }
+        }
+
+        impl<W, E> $crate::buffer::BufWriterOnce for $name<W>
+        where
+          W: ::core::ops::FnOnce(&mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), E>,
+        {
+          type Error = E;
+
+          #[inline]
+          fn encoded_len(&self) -> usize {
+            self.size()
+          }
+
+          #[inline]
+          fn write_once(self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> ::core::result::Result<(), Self::Error> {
+            self.into_components().1(buf)
           }
         }
       }
