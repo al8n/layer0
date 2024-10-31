@@ -150,6 +150,11 @@ impl<'a> TypeRef<'a> for &'a str {
   unsafe fn from_slice(src: &'a [u8]) -> Self {
     core::str::from_utf8(src).unwrap()
   }
+
+  #[inline]
+  fn as_raw(&self) -> Option<&'a [u8]> {
+    Some(self.as_bytes())
+  }
 }
 
 /// A wrapper type for `&'a str`.
@@ -178,6 +183,11 @@ impl<'a> From<Str<'a>> for &'a str {
 impl<'a> TypeRef<'a> for Str<'a> {
   unsafe fn from_slice(src: &'a [u8]) -> Self {
     Self(core::str::from_utf8(src).unwrap())
+  }
+
+  #[inline]
+  fn as_raw(&self) -> Option<&'a [u8]> {
+    Some(self.0.as_bytes())
   }
 }
 

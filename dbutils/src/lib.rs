@@ -22,17 +22,13 @@ pub mod buffer;
 /// Common error types.
 pub mod error;
 
-/// Some traits may be useful.
-pub mod traits;
-pub use traits::{
-  comparator::{Ascend, Comparator, Descend, StaticComparator},
-  ComparableRangeBounds,
-};
-
-#[doc(inline)]
-pub use equivalent;
-
 pub use cheap_clone::CheapClone;
+
+/// Re-export of [`equivalent`](::equivalent) crate.
+pub mod equivalent;
+
+/// Types and traits for encoding and decoding.
+pub mod types;
 
 #[doc(hidden)]
 pub mod __private {

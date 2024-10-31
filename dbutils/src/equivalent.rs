@@ -1,13 +1,9 @@
-mod r#type;
+pub use equivalent::{Comparable, Equivalent};
+
 use core::{
   cmp::Ordering,
   ops::{Bound, RangeBounds},
 };
-
-use equivalent::Comparable;
-pub use r#type::*;
-
-pub(super) mod comparator;
 
 /// `ComparableRangeBounds` is implemented as an extention to `RangeBounds` to
 /// allow for comparison of items with range bounds.

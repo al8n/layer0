@@ -151,6 +151,11 @@ impl<'a> TypeRef<'a> for &'a [u8] {
   unsafe fn from_slice(src: &'a [u8]) -> Self {
     src
   }
+
+  #[inline]
+  fn as_raw(&self) -> Option<&'a [u8]> {
+    Some(self)
+  }
 }
 
 /// A wrapper type for `&'a [u8]`.

@@ -35,8 +35,13 @@ impl Type for () {
   }
 }
 
-impl TypeRef<'_> for () {
+impl<'a> TypeRef<'a> for () {
   unsafe fn from_slice(_buf: &[u8]) -> Self {}
+
+  #[inline]
+  fn as_raw(&self) -> Option<&'a [u8]> {
+    Some(&[])
+  }
 }
 
 macro_rules! impl_numbers {

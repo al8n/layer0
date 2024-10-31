@@ -11,7 +11,7 @@ use equivalent::{Comparable, Equivalent};
 
 use crate::{
   error::InsufficientBuffer,
-  traits::{MaybeStructured, Type},
+  types::{MaybeStructured, Type},
 };
 
 use super::leb128::*;
