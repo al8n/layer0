@@ -20,7 +20,11 @@ mod filter;
 #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
 pub use filter::{bits_per_key, Filter};
 
+#[cfg(any(feature = "std", feature = "alloc"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
 mod frozen_filter;
+#[cfg(any(feature = "std", feature = "alloc"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
 pub use frozen_filter::FrozenFilter;
 
 /// Hashers for bloomfilter.
