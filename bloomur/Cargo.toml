@@ -1,0 +1,39 @@
+[package]
+name = "bloomur"
+version = "0.1.0"
+repository = "https://github.com/al8n/layer0/tree/main/bloomur"
+edition.workspace = true
+rust-version = "1.81.0"
+homepage.workspace = true
+categories = ["development-tools", "database-implementations", "data-structures", "no-std"]
+keywords = ["bloom-filter", "bloomfilter"]
+license.workspace = true
+metadata.workspace = true
+description = "Bloom filter for databases"
+
+[features]
+default = ["std"]
+alloc = []
+std = []
+
+xxhash32 = ["xxhash-rust/xxh32"]
+xxhash3 = ["xxhash-rust/xxh3"]
+
+[dependencies]
+bit-vec = "0.8"
+xxhash-rust = { version = "0.8", optional = true, default-features = false }
+
+libm = { version = "0.2", default-features = false }
+
+[dev-dependencies]
+divan = "0.1"
+rand = "0.8"
+bloomfilter = "1"
+fastbloom = "0.7"
+fastbloom-rs = "0.5"
+
+[[bench]]
+name = "bench"
+harness = false
+
+
