@@ -13,15 +13,16 @@ description = "Bloom filter for databases"
 
 [features]
 default = ["std"]
-alloc = []
-std = []
+alloc = ["smallvec"]
+std = ["smallvec"]
 
 xxhash32 = ["xxhash-rust/xxh32"]
 xxhash3 = ["xxhash-rust/xxh3"]
 
 [dependencies]
-bit-vec = "0.8"
+smallvec = { version = "1.13", default-features = false, optional = true, features = ["const_new"] }
 xxhash-rust = { version = "0.8", optional = true, default-features = false }
+
 
 libm = { version = "0.2", default-features = false }
 

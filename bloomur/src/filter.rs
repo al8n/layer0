@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 use super::{hasher::SimMurmur, BloomHasher};
 
 use core::f64::consts::LN_2;
@@ -40,13 +42,21 @@ pub struct Filter<const N: usize = 128, S = SimMurmur> {
   last_hash: u32,
 
   // We store the hashes in blocks.
-  blocks: Vec<Vec<u32>>,
+  blocks: SmallVec<[Vec<u32>; 2]>,
 
   hasher: S,
 }
 
 impl<const N: usize> Filter<N> {
   /// Creates a new filter builder.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::Filter;
+  ///
+  /// let f = Filter::<512>::new(1000, 0.01);
+  /// ```
   #[inline]
   pub fn new(num_entries: usize, fp: f64) -> Self {
     let bpk = bits_per_key(num_entries, fp);
@@ -54,19 +64,27 @@ impl<const N: usize> Filter<N> {
       bits_per_key: bpk,
       num_hashes: 0,
       last_hash: 0,
-      blocks: Vec::new(),
+      blocks: SmallVec::new_const(),
       hasher: SimMurmur::new(),
     }
   }
 
   /// Creates a new filter builder.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::Filter;
+  ///
+  /// let f = Filter::<512>::with_bits_per_key(10);
+  /// ```
   #[inline]
   pub const fn with_bits_per_key(bits_per_key: usize) -> Self {
     Self {
       bits_per_key,
       num_hashes: 0,
       last_hash: 0,
-      blocks: Vec::new(),
+      blocks: SmallVec::new_const(),
       hasher: SimMurmur::new(),
     }
   }
@@ -74,6 +92,14 @@ impl<const N: usize> Filter<N> {
 
 impl<const N: usize, S> Filter<N, S> {
   /// Creates a new filter builder.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::{Filter, hasher::SimMurmur};
+  ///
+  /// let f = Filter::<512, SimMurmur>::with_hasher(1000, 0.01, SimMurmur::new());
+  /// ```
   #[inline]
   pub fn with_hasher(num_entries: usize, fp: f64, hasher: S) -> Self {
     let bpk = bits_per_key(num_entries, fp);
@@ -81,19 +107,27 @@ impl<const N: usize, S> Filter<N, S> {
       bits_per_key: bpk,
       num_hashes: 0,
       last_hash: 0,
-      blocks: Vec::new(),
+      blocks: SmallVec::new_const(),
       hasher,
     }
   }
 
   /// Creates a new filter builder.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::{Filter, hasher::SimMurmur};
+  ///
+  /// let f = Filter::<512, SimMurmur>::with_bits_per_key_and_hasher(10, SimMurmur::new());
+  /// ```
   #[inline]
   pub const fn with_bits_per_key_and_hasher(bits_per_key: usize, hasher: S) -> Self {
     Self {
       bits_per_key,
       num_hashes: 0,
       last_hash: 0,
-      blocks: Vec::new(),
+      blocks: SmallVec::new_const(),
       hasher,
     }
   }
@@ -154,6 +188,19 @@ where
   ///
   /// - Returns `Ok(usize)` the number of bytes written to the buffer.
   /// - Returns `Err(usize)` when the buf does not large enough to hold the filter, the number of bytes required to write the filter.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::Filter;
+  ///
+  /// let mut f = Filter::<512>::with_bits_per_key(10);
+  /// f.insert(b"hello");
+  /// f.insert(b"world");
+  ///
+  /// let mut buf = vec![0; f.filter_length()];
+  /// let written = f.finalize_to(&mut buf).unwrap();
+  /// ```
   pub fn finalize_to(self, buf: &mut [u8]) -> Result<usize, usize> {
     let n_lines = self.n_lines();
     let n_bytes = n_lines * CACHE_LINE_SIZE;

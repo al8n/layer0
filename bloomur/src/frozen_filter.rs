@@ -19,6 +19,31 @@ impl<A> From<A> for FrozenFilter<A> {
 
 impl<A> FrozenFilter<A> {
   /// Creates a new frozen filter with the default hasher.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::{Filter, FrozenFilter};
+  ///
+  /// let mut filter = Filter::<512>::new(10_000, 0.01);
+  ///
+  /// filter.insert(b"hello");
+  /// filter.insert(b"world");
+  ///
+  /// let b = filter.finalize();
+  ///
+  /// let frozen = FrozenFilter::<&[u8]>::from(b.as_ref());
+  ///
+  /// assert!(frozen.may_contain(b"hello"));
+  /// assert!(frozen.may_contain(b"world"));
+  /// assert!(!frozen.may_contain(b"foo"));
+  ///
+  /// let frozen = FrozenFilter::new(b);
+  ///
+  /// assert!(frozen.may_contain(b"hello"));
+  /// assert!(frozen.may_contain(b"world"));
+  /// assert!(!frozen.may_contain(b"foo"));
+  /// ```
   #[inline]
   pub const fn new(a: A) -> Self {
     Self {
@@ -30,6 +55,25 @@ impl<A> FrozenFilter<A> {
 
 impl<A, S> FrozenFilter<A, S> {
   /// Creates a new frozen filter with the given hasher.
+  ///
+  /// ## Example
+  ///
+  /// ```rust
+  /// use bloomur::{Filter, FrozenFilter, hasher::SimMurmur};
+  ///
+  /// let mut filter = Filter::<512>::new(10_000, 0.01);
+  ///
+  /// filter.insert(b"hello");
+  /// filter.insert(b"world");
+  ///
+  /// let b = filter.finalize();
+  ///
+  /// let frozen = FrozenFilter::<&[u8]>::with_hasher(b.as_ref(), SimMurmur::new());
+  ///
+  /// assert!(frozen.may_contain(b"hello"));
+  /// assert!(frozen.may_contain(b"world"));
+  /// assert!(!frozen.may_contain(b"foo"));
+  /// ```
   #[inline]
   pub const fn with_hasher(a: A, hasher: S) -> Self {
     Self { src: a, hasher }
