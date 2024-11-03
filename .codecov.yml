@@ -6,6 +6,7 @@ ignore:
   - "**/examples/"
   - "**/benches/"
   - "**/tests/"
+  - "indexsort/tests/"
 
 coverage:
   status:

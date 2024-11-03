@@ -5,8 +5,11 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+extern crate alloc as std;
 
 struct LessSwap<'a, T, L> {
   data: &'a mut [T],
@@ -22,14 +25,18 @@ impl<T, L> IndexSort for ImmutableLessSwap<'_, T, L>
 where
   L: Fn(usize, usize) -> bool,
 {
+  #[inline]
   fn len(&self) -> usize {
     self.data.len()
   }
 
+  #[cold]
+  #[inline(never)]
   fn swap(&mut self, _i: usize, _j: usize) {
     unreachable!()
   }
 
+  #[inline]
   fn less(&self, i: usize, j: usize) -> bool {
     (self.less)(i, j)
   }
@@ -39,16 +46,39 @@ impl<T, L> IndexSort for LessSwap<'_, T, L>
 where
   L: Fn(&[T], usize, usize) -> bool,
 {
+  #[inline]
   fn len(&self) -> usize {
     self.data.len()
   }
 
+  #[inline]
   fn swap(&mut self, i: usize, j: usize) {
     self.data.swap(i, j);
   }
 
+  #[inline]
   fn less(&self, i: usize, j: usize) -> bool {
     (self.less)(self.data, i, j)
+  }
+}
+
+impl<T: PartialOrd, C: core::ops::DerefMut<Target = [T]>> IndexSort for C {
+  #[inline]
+  fn len(&self) -> usize {
+    let src: &[T] = self;
+    src.len()
+  }
+
+  #[inline]
+  fn less(&self, i: usize, j: usize) -> bool {
+    let src: &[T] = self;
+    src[i] < src[j]
+  }
+
+  #[inline]
+  fn swap(&mut self, i: usize, j: usize) {
+    let src: &mut [T] = self;
+    src.swap(i, j);
   }
 }
 
@@ -313,74 +343,6 @@ pub trait IndexSort {
   {
     let n = self.len();
     stable(&mut Reverse(self), n);
-  }
-}
-
-#[inline]
-fn __swap_slice<T>(data: &mut [T], i: usize, j: usize) {
-  data.swap(i, j)
-}
-
-#[inline]
-const fn __slice_len<T>(data: &[T]) -> usize {
-  data.len()
-}
-
-#[cfg(feature = "alloc")]
-impl<T: PartialOrd> IndexSort for ::alloc::vec::Vec<T> {
-  fn len(&self) -> usize {
-    __slice_len(self)
-  }
-
-  fn less(&self, i: usize, j: usize) -> bool {
-    self[i] < self[j]
-  }
-
-  fn swap(&mut self, i: usize, j: usize) {
-    __swap_slice(self, i, j);
-  }
-}
-
-impl<T: PartialOrd> IndexSort for &mut [T] {
-  fn len(&self) -> usize {
-    __slice_len(self)
-  }
-
-  fn less(&self, i: usize, j: usize) -> bool {
-    self[i] < self[j]
-  }
-
-  fn swap(&mut self, i: usize, j: usize) {
-    __swap_slice(self, i, j);
-  }
-}
-
-impl<const N: usize, T: PartialOrd> IndexSort for [T; N] {
-  fn len(&self) -> usize {
-    __slice_len(self)
-  }
-
-  fn less(&self, i: usize, j: usize) -> bool {
-    self[i] < self[j]
-  }
-
-  fn swap(&mut self, i: usize, j: usize) {
-    __swap_slice(self, i, j);
-  }
-}
-
-#[cfg(feature = "alloc")]
-impl<T: PartialOrd> IndexSort for ::alloc::boxed::Box<[T]> {
-  fn len(&self) -> usize {
-    __slice_len(self)
-  }
-
-  fn less(&self, i: usize, j: usize) -> bool {
-    self[i] < self[j]
-  }
-
-  fn swap(&mut self, i: usize, j: usize) {
-    __swap_slice(self, i, j);
   }
 }
 
