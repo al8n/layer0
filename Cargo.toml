@@ -1,5 +1,5 @@
 [workspace]
-members = [
+members = [ "bloomur",
   "cheap-clone",
   "dbutils",
   "indexsort",
@@ -17,3 +17,13 @@ license = "MIT OR Apache-2.0"
 [workspace.package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[profile.bench]
+opt-level = 3
+debug = false
+codegen-units = 1
+lto = 'thin'
+incremental = false
+debug-assertions = false
+overflow-checks = false
+rpath = false
