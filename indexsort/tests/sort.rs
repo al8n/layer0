@@ -2,7 +2,7 @@
 
 use std::cell::{Cell, RefCell};
 
-use indexsort::{IndexSort, SliceSortExt};
+use indexsort::{Searchable, SearchableExt, SliceExt, Sortable, SortableExt};
 use rand::Rng;
 
 const INTS: &[isize] = &[
@@ -31,34 +31,34 @@ const STRINGS: &[&str] = &["", "Hello", "foo", "bar", "foo", "f00", "%*&^*&^&", 
 #[test]
 fn test_sort_int_slice() {
   let mut data = INTS.to_vec();
-  IndexSort::sort(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 
   let mut data = INTS.to_vec();
-  IndexSort::sort_stable(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort_stable(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 }
 
 #[test]
 fn test_sort_f64_slice() {
   let mut data = FLOATS.to_vec();
-  IndexSort::sort(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 
   let mut data = FLOATS.to_vec();
-  IndexSort::sort_stable(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort_stable(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 }
 
 #[test]
 fn test_sort_string_slice() {
   let mut data = STRINGS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-  IndexSort::sort(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 
   let mut data = STRINGS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-  IndexSort::sort_stable(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort_stable(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 }
 
 #[test]
@@ -81,14 +81,14 @@ fn test_sort_large_random() {
   let mut data = (0..1000000)
     .map(|_| rand::random::<isize>())
     .collect::<Vec<_>>();
-  IndexSort::sort(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 
   let mut data = (0..1000000)
     .map(|_| rand::random::<isize>())
     .collect::<Vec<_>>();
-  IndexSort::sort_stable(&mut data);
-  assert!(IndexSort::is_sorted(&data));
+  SortableExt::sort_stable(&mut data);
+  assert!(SearchableExt::is_sorted(&data));
 }
 
 #[test]
@@ -96,8 +96,8 @@ fn test_reverse_sort_int_slice() {
   let mut data = INTS.to_vec();
   let mut data1 = INTS.to_vec();
 
-  IndexSort::sort(&mut data);
-  IndexSort::sort_reverse(&mut data1);
+  SortableExt::sort(&mut data);
+  SortableExt::sort_reverse(&mut data1);
   for i in 0..INTS.len() {
     assert_eq!(data[i], data1[INTS.len() - i - 1]);
     if i > data.len() / 2 {
@@ -109,7 +109,7 @@ fn test_reverse_sort_int_slice() {
 #[derive(Debug)]
 struct NonDeterministicTestingData;
 
-impl IndexSort for NonDeterministicTestingData {
+impl Searchable for NonDeterministicTestingData {
   fn len(&self) -> usize {
     500
   }
@@ -121,7 +121,9 @@ impl IndexSort for NonDeterministicTestingData {
 
     rand::thread_rng().gen_range(0f32..1f32) < 0.5f32
   }
+}
 
+impl Sortable for NonDeterministicTestingData {
   fn swap(&mut self, i: usize, j: usize) {
     if i >= self.len() || j >= self.len() {
       panic!("nondeterministic comparison out of bounds")
@@ -132,7 +134,7 @@ impl IndexSort for NonDeterministicTestingData {
 #[test]
 fn test_non_deterministic_comparison() {
   for _ in 0..10 {
-    IndexSort::sort(&mut NonDeterministicTestingData);
+    SortableExt::sort(&mut NonDeterministicTestingData);
   }
 }
 
@@ -197,7 +199,7 @@ struct TestingData {
   nswap: usize,
 }
 
-impl IndexSort for TestingData {
+impl Searchable for TestingData {
   fn len(&self) -> usize {
     self.data.len()
   }
@@ -207,7 +209,9 @@ impl IndexSort for TestingData {
     self.ncmp.set(cmp + 1);
     self.data[i] < self.data[j]
   }
+}
 
+impl Sortable for TestingData {
   fn swap(&mut self, i: usize, j: usize) {
     if self.nswap >= self.max_swap {
       panic!(
@@ -385,7 +389,7 @@ struct AdversaryTestingData {
   gas: usize,
 }
 
-impl IndexSort for AdversaryTestingData {
+impl Searchable for AdversaryTestingData {
   fn len(&self) -> usize {
     self.data.borrow().len()
   }
@@ -422,7 +426,9 @@ impl IndexSort for AdversaryTestingData {
 
     data[i] < data[j]
   }
+}
 
+impl Sortable for AdversaryTestingData {
   fn swap(&mut self, i: usize, j: usize) {
     self.data.borrow_mut().swap(i, j);
   }
@@ -477,7 +483,7 @@ struct Pairs {
   data: Vec<Pair>,
 }
 
-impl IndexSort for Pairs {
+impl Searchable for Pairs {
   fn len(&self) -> usize {
     self.data.len()
   }
@@ -485,7 +491,9 @@ impl IndexSort for Pairs {
   fn less(&self, i: usize, j: usize) -> bool {
     self.data[i].a < self.data[j].a
   }
+}
 
+impl Sortable for Pairs {
   fn swap(&mut self, i: usize, j: usize) {
     self.data.swap(i, j);
   }
