@@ -315,7 +315,7 @@ mod tests {
   }
 
   #[test]
-  fn test_small_bloom_filter_simmurur() {
+  fn small_bloomfilter_simmurur() {
     let f = new_filter::<SimMurmur>(10, [b"hello", b"world"].iter().map(|e| e.as_slice()));
 
     let want = r###"
@@ -343,14 +343,14 @@ mod tests {
 
   #[test]
   #[cfg(feature = "xxhash32")]
-  fn test_small_bloom_filter_xxhash32() {
+  fn small_bloomfilter_xxhash32() {
     let f = new_filter::<Xxh32>(10, [b"hello", b"world"].iter().map(|e| e.as_slice()));
     small_bloomfilter::<Xxh32>(&f);
   }
 
   #[test]
   #[cfg(feature = "xxhash3")]
-  fn test_small_bloom_filter_xxh3() {
+  fn small_bloomfilter_xxh3() {
     let f = new_filter::<Xxh3>(10, [b"hello", b"world"].iter().map(|e| e.as_slice()));
     small_bloomfilter::<Xxh3>(&f);
   }

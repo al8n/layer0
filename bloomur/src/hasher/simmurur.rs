@@ -14,9 +14,51 @@ impl Default for SimMurmur {
 }
 
 impl BloomHasher for SimMurmur {
-  #[inline]
   fn hash_one(&self, src: &[u8]) -> u32 {
-    bloom_hash(self.seed, src)
+    const M: u32 = 0xc6a4a793;
+
+    let mut src_len = src.len();
+    let mut h = self.seed ^ ((src_len as u32).wrapping_mul(M));
+
+    let mut cursor = 0;
+
+    while src_len >= 4 {
+      let k = (src[cursor] as u32)
+        | ((src[cursor + 1] as u32) << 8)
+        | ((src[cursor + 2] as u32) << 16)
+        | ((src[cursor + 3] as u32) << 24);
+      h = h.wrapping_add(k);
+      h = h.wrapping_mul(M);
+      h ^= h >> 16;
+      src_len -= 4;
+      cursor += 4;
+    }
+
+    // Handle the remaining bytes, with sign-extension as required.
+    // This converts each byte to i8 to match RocksDB behavior.
+    match src_len {
+      3 => {
+        h = h.wrapping_add((src[cursor + 2] as i8 as u32) << 16);
+        h = h.wrapping_add((src[cursor + 1] as i8 as u32) << 8);
+        h = h.wrapping_add(src[cursor] as i8 as u32);
+        h = h.wrapping_mul(M);
+        h ^= h >> 24;
+      }
+      2 => {
+        h = h.wrapping_add((src[cursor + 1] as i8 as u32) << 8);
+        h = h.wrapping_add(src[cursor] as i8 as u32);
+        h = h.wrapping_mul(M);
+        h ^= h >> 24;
+      }
+      1 => {
+        h = h.wrapping_add(src[cursor] as i8 as u32);
+        h = h.wrapping_mul(M);
+        h ^= h >> 24;
+      }
+      _ => {}
+    };
+
+    h
   }
 }
 
@@ -34,57 +76,8 @@ impl SimMurmur {
   }
 }
 
-/// A hashing algorithm similar to the Murmur hash.
-#[inline]
-pub const fn bloom_hash(seed: u32, src: &[u8]) -> u32 {
-  const M: u32 = 0xc6a4a793;
-
-  let mut src_len = src.len();
-  let mut h = seed ^ ((src_len as u32).wrapping_mul(M));
-
-  let mut cursor = 0;
-
-  while src_len >= 4 {
-    let k = (src[cursor] as u32)
-      | ((src[cursor + 1] as u32) << 8)
-      | ((src[cursor + 2] as u32) << 16)
-      | ((src[cursor + 3] as u32) << 24);
-    h = h.wrapping_add(k);
-    h = h.wrapping_mul(M);
-    h ^= h >> 16;
-    src_len -= 4;
-    cursor += 4;
-  }
-
-  // Handle the remaining bytes, with sign-extension as required.
-  // This converts each byte to i8 to match RocksDB behavior.
-  match src_len {
-    3 => {
-      h = h.wrapping_add((src[cursor + 2] as i8 as u32) << 16);
-      h = h.wrapping_add((src[cursor + 1] as i8 as u32) << 8);
-      h = h.wrapping_add(src[cursor] as i8 as u32);
-      h = h.wrapping_mul(M);
-      h ^= h >> 24;
-    }
-    2 => {
-      h = h.wrapping_add((src[cursor + 1] as i8 as u32) << 8);
-      h = h.wrapping_add(src[cursor] as i8 as u32);
-      h = h.wrapping_mul(M);
-      h ^= h >> 24;
-    }
-    1 => {
-      h = h.wrapping_add(src[cursor] as i8 as u32);
-      h = h.wrapping_mul(M);
-      h ^= h >> 24;
-    }
-    _ => {}
-  };
-
-  h
-}
-
 #[test]
-fn test_hash() {
+fn hash() {
   // The magic expected numbers come from RocksDB's util/hash_test.cc:TestHash.
   const TEST_CASES: &[(&[u8], u32)] = &[
     (b"", 3164544308),
@@ -130,7 +123,8 @@ fn test_hash() {
     (b"\xbd\x2c\x63\x38\xbf\xe9\x78\xb7\xbf\x15", 3382479516),
   ];
 
+  let hash = SimMurmur::new();
   for (src, expected) in TEST_CASES {
-    assert_eq!(bloom_hash(0xbc9f1d34, src), *expected);
+    assert_eq!(hash.hash_one(src), *expected);
   }
 }
