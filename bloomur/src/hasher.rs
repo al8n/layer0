@@ -9,7 +9,7 @@ pub mod xxh32;
 #[cfg_attr(docsrs, doc(cfg(feature = "xxhash32")))]
 pub use xxh32::Xxh32;
 
-/// [`Xxhash3`](xxhash_rust::xxh3::Xxh6) hasher.
+/// [`Xxhash3`](xxhash_rust::xxh3::Xxh3) hasher.
 #[cfg(feature = "xxhash3")]
 #[cfg_attr(docsrs, doc(cfg(feature = "xxhash3")))]
 pub mod xxh3;
