@@ -13,10 +13,10 @@ extern crate std;
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 extern crate alloc as std;
 
-#[cfg(any(feature = "std", feature = "alloc", test))]
+#[cfg(any(feature = "std", feature = "alloc"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
 mod filter;
-#[cfg(any(feature = "std", feature = "alloc", test))]
+#[cfg(any(feature = "std", feature = "alloc"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
 pub use filter::{bits_per_key, Filter};
 
