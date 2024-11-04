@@ -1,0 +1,42 @@
+[package]
+name = "async-txn"
+version = "0.2.0"
+repository = "https://github.com/al8n/layer0/tree/main/txn"
+homepage = "https://github.com/al8n/layer0/tree/main/txn"
+edition.workspace = true
+license.workspace = true
+description = "A runtime agnostic, WASM/WASI friendly, multi-writer-multi-reader MVCC, ACID, Serializable Snapshot Isolation transaction manager for database development."
+
+[features]
+default = []
+
+# Features will export the generic unit tests implementation for database based on txn
+test = ["rand"]
+
+async-std = ["wmark/async-std"]
+smol = ["wmark/smol"]
+tokio = ["wmark/tokio"]
+wasm = ["wmark/wasm"]
+
+[dependencies]
+async-channel = { version = "2" }
+cheap-clone.workspace = true
+crossbeam-utils.workspace = true
+either.workspace = true
+indexmap = "2"
+scopeguard = { version = "1", features = ["use_std"] }
+smallvec-wrapper = { version = "0.1", features = ["const_new"] }
+waterark = { path = "../waterark", features = ["future", "std"] }
+txn-core = { path = "../txn-core", features = ["default"] }
+
+rand = { version = "0.8", optional = true }
+futures = "0.3"
+
+[dev-dependencies]
+rand.workspace = true
+async-std = { version = "1", features = ["attributes"] }
+waterark = { path = "../waterark", features = ["std", "async-std"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

@@ -1,0 +1,36 @@
+[package]
+name = "txn"
+version = "0.2.0"
+repository = "https://github.com/al8n/layer0/tree/main/txn"
+homepage = "https://github.com/al8n/layer0/tree/main/txn"
+edition.workspace = true
+license.workspace = true
+categories.workspace = true
+keywords.workspace = true
+readme = "README.md"
+description = "A generic optimistic transaction manger, which is ACID, concurrent with SSI (Serializable Snapshot Isolation)."
+
+[features]
+default = []
+
+[dependencies]
+cheap-clone.workspace = true
+crossbeam-channel = "0.8"
+crossbeam-utils.workspace = true
+either.workspace = true
+indexmap = { workspace = true, features = ["default"] }
+parking_lot.workspace = true
+scopeguard = { workspace = true, features = ["use_std"] }
+smallvec-wrapper.workspace = true
+thiserror.workspace = true
+wmark = { workspace = true, features = ["default"] }
+txn-core = { workspace = true, features = ["default"] }
+
+rand = { workspace = true, optional = true }
+
+[dev-dependencies]
+rand.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

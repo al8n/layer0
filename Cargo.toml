@@ -5,13 +5,15 @@ members = [
   "dbutils",
   "indexsort",
   "waterark",
+  # "async-txn",
+  # "txn",
+  "txn-core",
 ]
 resolver = "2"
 
 [workspace.package]
 repository = "https://github.com/al8n/layer0"
 edition = "2021"
-rust-version = "1.56.0"
 homepage = "https://github.com/al8n/layer0"
 categories = ["asynchronous", "data-structures", "concurrency", "database-implementations", "development-tools"]
 license = "MIT OR Apache-2.0"
@@ -19,6 +21,16 @@ license = "MIT OR Apache-2.0"
 [workspace.package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[workspace.dependencies]
+cheap-clone = { version = "0.1", path = "cheap-clone" }
+crossbeam-utils = { version = "0.8", default-features = false }
+either = { version = "1", default-features = false }
+indexmap = { version = "2", default-features = false }
+smallvec-wrapper = { version = "0.1", default-features = false, features = ["const_new"] }
+scopeguard = { version = "1", default-features = false }
+thiserror = "1"
+tracing = "0.1"
 
 [profile.bench]
 opt-level = 3

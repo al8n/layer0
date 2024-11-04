@@ -1,0 +1,28 @@
+[package]
+name = "txn-core"
+version = "0.2.0"
+edition.workspace = true
+repository = "https://github.com/al8n/layer0/tree/main/txn-core"
+homepage = "https://github.com/al8n/layer0/tree/main/txn-core"
+license.workspace = true
+description = "The structs and traits for the `txn` and `async-txn` crates."
+categories = ["no-std", "transaction"]
+
+[features]
+default = ["std"]
+alloc = ["indexmap"]
+std = ["alloc", "smallvec-wrapper/std", "indexmap/default", "thiserror"]
+
+
+[dependencies]
+ahash = "0.8"
+cheap-clone.workspace = true
+either.workspace = true
+
+thiserror = { workspace = true, optional = true }
+indexmap = { workspace = true, optional = true }
+smallvec-wrapper = { workspace = true, optional = true }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
