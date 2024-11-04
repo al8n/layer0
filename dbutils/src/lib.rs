@@ -24,8 +24,11 @@ pub mod error;
 
 pub use cheap_clone::CheapClone;
 
-/// Re-export of [`equivalent`](::equivalent) crate.
+/// Re-exports [`equivalent`](::equivalent) crate and extensions.
 pub mod equivalent;
+
+/// Similar to [`equivalent`], but for bytes.
+pub mod equivalentor;
 
 /// Types and traits for encoding and decoding.
 pub mod types;

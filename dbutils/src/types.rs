@@ -146,6 +146,15 @@ pub trait KeyRef<'a, K: ?Sized>: Ord + Comparable<K> {
   /// - The `a` and `b` must be the same as the one returned by [`K::encode`](Type::encode).
   unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering;
 
+  /// Compares two binary formats of the `K` directly.
+  ///
+  /// ## Safety
+  /// - The `a` and `b` must be the same as the one returned by [`K::encode`](Type::encode).
+  #[inline]
+  unsafe fn equivalent_binary(a: &[u8], b: &[u8]) -> bool {
+    a == b
+  }
+
   /// Returns `true` if the key is contained in the range.
   ///
   /// ## Safety
