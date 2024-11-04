@@ -1,0 +1,313 @@
+name: waterark
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'waterark/src/**'
+      - 'waterark/tests/**'
+      - 'waterark/Cargo.toml'
+  pull_request:
+    paths:
+      - 'waterark/src/**'
+      - 'waterark/tests/**'
+      - 'waterark/Cargo.toml'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+  RUST_BACKTRACE: 1
+  nightly: nightly
+  stable: stable
+
+jobs:
+  # Check formatting
+  rustfmt:
+    name: rustfmt
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Rust
+      # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
+      run: rustup update stable --no-self-update && rustup default stable
+    - name: Check formatting
+      run: cargo fmt -p waterark --all -- --check
+
+
+  # Apply clippy lints
+  clippy:
+    name: clippy
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Rust
+      # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
+      run: rustup update stable --no-self-update && rustup default stable
+    - name: Install cargo-hack
+      run: cargo install cargo-hack
+    - name: Apply clippy lints
+      run: cargo hack clippy -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future,parking_lot  --exclude-no-default-features
+
+  build:
+    name: build
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache cargo build and registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-build-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+    - name: Install Rust
+      # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
+      run: rustup update stable --no-self-update && rustup default stable
+    - name: Install cargo-hack
+      run: cargo install cargo-hack
+    - name: Cache ~/.cargo
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-coverage-dotcargo
+    - name: Run build
+      run: cargo hack build -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future,parking_lot  --exclude-no-default-features
+  
+  test:
+    name: test
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache cargo build and registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-test-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-test-
+    - name: Install Rust
+      # --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
+      run: rustup update stable --no-self-update && rustup default stable
+    - name: Install cargo-hack
+      run: cargo install cargo-hack
+    - name: Cache ~/.cargo
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-coverage-dotcargo
+    - name: Run test
+      run: cargo hack test -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future,parking_lot  --exclude-no-default-features
+
+  sanitizer:
+    name: sanitizer
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          # - macos-latest
+          # - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache cargo build and registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-sanitizer-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sanitizer-
+      - name: Install Rust
+        run: rustup update $nightly && rustup default $nightly
+      - name: Install rust-src
+        run: rustup component add rust-src
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
+      - name: ASAN / LSAN / MSAN / TSAN (Linux)
+        run: waterark/ci/sanitizer.sh
+        if: matrix.os == 'ubuntu-latest'
+
+  miri-tb:
+    name: miri-tb-${{ matrix.target }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          # - macos-latest
+        target:
+          - x86_64-unknown-linux-gnu
+          - i686-unknown-linux-gnu
+          - powerpc64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+        # Exclude invalid combinations
+        exclude:
+          - os: ubuntu-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: i686-unknown-linux-gnu
+          - os: macos-latest
+            target: powerpc64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache cargo build and registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-miri-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-miri-
+      - name: Miri
+        run: |
+          bash waterark/ci/miri_tb.sh ${{ matrix.target }}
+
+  miri-sb:
+    name: miri-sb-${{ matrix.target }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          # - macos-latest
+        target:
+          - x86_64-unknown-linux-gnu
+          - i686-unknown-linux-gnu
+          - powerpc64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+        # Exclude invalid combinations
+        exclude:
+          - os: ubuntu-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: i686-unknown-linux-gnu
+          - os: macos-latest
+            target: powerpc64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache cargo build and registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-miri-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-miri-
+      - name: Miri
+        run: |
+          bash waterark/ci/miri_sb.sh ${{ matrix.target }}
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache cargo build and registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-latest-docs-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-latest-docs-
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.nightly }}
+          override: true
+      - name: "doc --lib --all-features"
+        run: cargo doc --lib --no-deps --all-features
+        env:
+          RUSTFLAGS: --cfg docsrs
+          RUSTDOCFLAGS: --cfg docsrs -Dwarnings
+
+  # coverage:
+  #   name: coverage
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - rustfmt
+  #     - clippy
+  #     - build
+  #     - cross
+  #     - test
+  #     - docs
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Install latest nightly
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: nightly
+  #         override: true
+  #     - uses: actions-rs/install@v0.1
+  #       with:
+  #         crate: cargo-tarpaulin
+  #         version: latest
+  #     - name: Cache ~/.cargo
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ~/.cargo
+  #         key: ${{ runner.os }}-coverage-dotcargo
+  #     - name: Cache cargo build
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: target
+  #         key: ${{ runner.os }}-coverage-cargo-build-target
+  #     - name: Run tarpaulin
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: tarpaulin
+  #         args: --all-features --run-types tests --run-types doctests --workspace --out xml
+  #     - name: Upload to codecov.io
+  #       uses: codecov/codecov-action@v4
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         fail_ci_if_error: true
+  #         slug: ${{ github.repository }}

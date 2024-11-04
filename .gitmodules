@@ -13,3 +13,6 @@
 [submodule "valog"]
 	path = valog
 	url = https://github.com/al8n/valog.git
+[submodule "dtlog"]
+	path = dtlog
+	url = https://github.com/al8n/dtlog.git

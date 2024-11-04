@@ -1,8 +1,10 @@
 [workspace]
-members = [ "bloomur",
+members = [
+  "bloomur",
   "cheap-clone",
   "dbutils",
   "indexsort",
+  "waterark",
 ]
 resolver = "2"
 
