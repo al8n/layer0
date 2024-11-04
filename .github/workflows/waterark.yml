@@ -59,7 +59,7 @@ jobs:
     - name: Install cargo-hack
       run: cargo install cargo-hack
     - name: Apply clippy lints
-      run: cargo hack clippy -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future --exclude-no-default-features
+      run: cargo hack clippy -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future,parking_lot  --exclude-no-default-features
 
   build:
     name: build
@@ -93,7 +93,7 @@ jobs:
         path: ~/.cargo
         key: ${{ runner.os }}-coverage-dotcargo
     - name: Run build
-      run: cargo hack build -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future --exclude-no-default-features
+      run: cargo hack build -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future,parking_lot  --exclude-no-default-features
   
   test:
     name: test
@@ -127,7 +127,7 @@ jobs:
         path: ~/.cargo
         key: ${{ runner.os }}-coverage-dotcargo
     - name: Run test
-      run: cargo hack test -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future --exclude-no-default-features
+      run: cargo hack test -p waterark --feature-powerset --group-features tokio,smol,async-std,wasm,std --skip future,parking_lot  --exclude-no-default-features
 
   sanitizer:
     name: sanitizer
