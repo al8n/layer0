@@ -128,7 +128,7 @@ impl Closer {
     self.inner.wg.done();
   }
 
-  /// Signals the [`Closer::has_been_closed`] signal.
+  /// Signals cancel to the closer.
   #[inline]
   pub fn signal(&self) {
     self.inner.cancel.cancel();

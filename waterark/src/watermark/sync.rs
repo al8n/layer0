@@ -218,7 +218,7 @@ impl WaterMark {
     })
   }
 
-  /// Works like [`begin`] but accepts multiple indices.
+  /// Works like [`begin`](WaterMark::begin) but accepts multiple indices.
   #[inline]
   pub fn begin_many(&self, indices: MediumVec<u64>) -> Result<()> {
     if indices.is_empty() {
