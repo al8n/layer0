@@ -16,8 +16,7 @@ impl Canceler {
   #[inline]
   fn cancel(&self) {
     // Safely take the sender out of the AtomicPtr.
-    let danling = core::ptr::NonNull::<()>::dangling();
-    let tx_ptr = self.tx.swap(danling.as_ptr(), Ordering::AcqRel);
+    let tx_ptr = self.tx.swap(core::ptr::null_mut(), Ordering::AcqRel);
 
     // Check if the pointer is not null (indicating it hasn't been taken already).
     if !tx_ptr.is_null() {
