@@ -25,10 +25,10 @@ pub trait Comparator: Equivalentor {
 /// allow for comparison of items with range bounds.
 pub trait RangeComparator: Comparator {
   /// Returns `true` if `item` is contained in the range.
-  fn compare_contains<R, Q>(&self, range: R, item: &[u8]) -> bool
+  fn compare_contains<R, Q>(&self, range: &R, item: &[u8]) -> bool
   where
     Q: ?Sized + Borrow<[u8]>,
-    R: RangeBounds<Q>,
+    R: ?Sized + RangeBounds<Q>,
   {
     let start = match range.start_bound() {
       Bound::Included(start) => self.compare(item, start.borrow()) != Ordering::Less,
@@ -150,10 +150,10 @@ pub trait StaticComparator: core::fmt::Debug + StaticEquivalentor {
 /// allow for comparison of items with range bounds.
 pub trait StaticRangeComparator: StaticComparator {
   /// Returns `true` if `item` is contained in the range.
-  fn compare_contains<R, Q>(range: R, item: &[u8]) -> bool
+  fn compare_contains<R, Q>(range: &R, item: &[u8]) -> bool
   where
     Q: ?Sized + Borrow<[u8]>,
-    R: RangeBounds<Q>,
+    R: ?Sized + RangeBounds<Q>,
   {
     let start = match range.start_bound() {
       Bound::Included(start) => Self::compare(start.borrow(), item) != Ordering::Less,
@@ -271,7 +271,7 @@ mod tests {
     assert_eq!(desc.compare(b"def", b"abc"), cmp::Ordering::Less);
     assert_eq!(desc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
 
-    assert!(desc.compare_contains::<_, &[u8]>("b".as_bytes().."a".as_bytes(), b"b"));
+    assert!(desc.compare_contains::<_, &[u8]>(&("b".as_bytes().."a".as_bytes()), b"b"));
   }
 
   #[test]
@@ -281,7 +281,7 @@ mod tests {
     assert_eq!(desc.compare(b"def", b"abc"), cmp::Ordering::Greater);
     assert_eq!(desc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
 
-    assert!(desc.compare_contains("a".as_bytes().."d".as_bytes(), b"b"));
+    assert!(desc.compare_contains(&("a".as_bytes().."d".as_bytes()), b"b"));
   }
 
   #[test]
@@ -291,7 +291,7 @@ mod tests {
     assert_eq!(asc.compare(b"def", b"abc"), cmp::Ordering::Greater);
     assert_eq!(asc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
 
-    assert!(asc.compare_contains("a".as_bytes().."d".as_bytes(), b"b"));
+    assert!(asc.compare_contains(&("a".as_bytes().."d".as_bytes()), b"b"));
   }
 
   #[test]
@@ -301,7 +301,7 @@ mod tests {
     assert_eq!(asc.compare(b"def", b"abc"), cmp::Ordering::Less);
     assert_eq!(asc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
     assert!(asc.equivalent(b"a", b"a"));
-    assert!(asc.compare_contains("d".as_bytes()..="a".as_bytes(), b"d"));
+    assert!(asc.compare_contains(&("d".as_bytes()..="a".as_bytes()), b"d"));
   }
 
   #[cfg(any(feature = "std", feature = "alloc"))]
@@ -312,7 +312,7 @@ mod tests {
     assert_eq!(arc.compare(b"def", b"abc"), cmp::Ordering::Greater);
     assert_eq!(arc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
 
-    assert!(arc.compare_contains("a".as_bytes().."d".as_bytes(), b"b"));
+    assert!(arc.compare_contains(&("a".as_bytes().."d".as_bytes()), b"b"));
 
     assert!(arc.equivalent(b"abc", b"abc"));
   }
