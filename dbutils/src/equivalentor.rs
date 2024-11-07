@@ -209,6 +209,55 @@ impl<T: StaticComparator> Comparator for T {
   }
 }
 
+/// Generic comparator for any `T: Type, for<'a> T::Ref<'a>: KeyRef<'a, T>`.
+#[derive(Default)]
+pub struct GenericComparator<T>(PhantomData<T>);
+
+impl<T> Clone for GenericComparator<T> {
+  #[inline]
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+
+impl<T> Copy for GenericComparator<T> {}
+
+impl<T> GenericComparator<T> {
+  /// Creates a new `GenericComparator`.
+  #[inline]
+  pub const fn new() -> Self {
+    Self(PhantomData)
+  }
+}
+
+impl<T> core::fmt::Debug for GenericComparator<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    f.debug_struct("GenericComparator").finish()
+  }
+}
+
+impl<T> Equivalentor for GenericComparator<T>
+where
+  T: Type,
+  for<'a> T::Ref<'a>: KeyRef<'a, T>,
+{
+  #[inline]
+  fn equivalent(&self, a: &[u8], b: &[u8]) -> bool {
+    unsafe { <T::Ref<'_> as KeyRef<'_, T>>::equivalent_binary(a, b) }
+  }
+}
+
+impl<T> Comparator for GenericComparator<T>
+where
+  T: Type,
+  for<'a> T::Ref<'a>: KeyRef<'a, T>,
+{
+  #[inline]
+  fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
+    unsafe { <T::Ref<'_> as KeyRef<'_, T>>::compare_binary(a, b) }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use core::cmp;
