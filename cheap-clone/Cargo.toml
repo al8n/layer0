@@ -1,6 +1,6 @@
 [package]
 name = "cheap-clone"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 repository = "https://github.com/al8n/layer0/tree/main/cheap-clone"
 homepage = "https://github.com/al8n/layer0/tree/main/cheap-clone"
@@ -12,7 +12,7 @@ rust-version = "1.56.0"
 [features]
 default = ["std"]
 alloc = []
-std = ["alloc"]
+std = ["alloc", "either?/default", "smol_str?/default", "triomphe?/std", "faststr?/default"]
 
 [dependencies]
 paste = "1"
@@ -21,6 +21,7 @@ among = { version = "0.1", default-features = false, optional = true }
 bytes = { version = "1", default-features = false, optional = true }
 either = { version = "1", default-features = false, optional = true }
 smol_str = { version = "0.3", default-features = false, optional = true }
+triomphe = { version = "0.1", default-features = false, optional = true }
 faststr = { version = "0.2", default-features = false, optional = true }
 
 [package.metadata.docs.rs]

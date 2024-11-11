@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.10.2"
+version = "0.10.3"
 repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"
@@ -13,13 +13,14 @@ categories = ["data-structures", "database-implementations", "development-tools"
 [features]
 default = ["std", "cheap-clone/default"]
 alloc = ["cheap-clone/alloc"]
-std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std"]
+std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std", "triomphe?/std"]
 
 among = ["cheap-clone/among"]
 bytes = ["dep:bytes", "cheap-clone/bytes"]
 either = ["cheap-clone/either"]
 smol_str = ["dep:smol_str", "cheap-clone/smol_str"]
 faststr = ["dep:faststr", "cheap-clone/faststr"]
+triomphe = ["dep:triomphe", "cheap-clone/triomphe"]
 
 crc32 = ["crc32fast"]
 xxhash64 = ["xxhash-rust/xxh64"]
@@ -31,6 +32,8 @@ equivalent = "1"
 either = { version = "1", default-features = false }
 cheap-clone = { version = "0.1", path = "../cheap-clone", default-features = false }
 paste = "1"
+
+triomphe = { version = "0.1", default-features = false, optional = true }
 
 crc32fast = { version = "1", optional = true, default-features = false }
 xxhash-rust = { version = "0.8", optional = true, default-features = false }

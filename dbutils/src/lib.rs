@@ -33,6 +33,9 @@ pub mod equivalentor;
 /// Types and traits for encoding and decoding.
 pub mod types;
 
+/// Utilities
+pub mod utils;
+
 #[doc(hidden)]
 pub mod __private {
   pub use paste;

@@ -49,13 +49,20 @@ pub trait CheapClone: Clone {
 }
 
 #[cfg(feature = "bytes")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bytes")))]
 impl CheapClone for bytes::Bytes {}
 
 #[cfg(feature = "smol_str")]
+#[cfg_attr(docsrs, doc(cfg(feature = "smol_str")))]
 impl CheapClone for smol_str::SmolStr {}
 
 #[cfg(feature = "faststr")]
+#[cfg_attr(docsrs, doc(cfg(feature = "faststr")))]
 impl CheapClone for faststr::FastStr {}
+
+#[cfg(feature = "triomphe")]
+#[cfg_attr(docsrs, doc(cfg(feature = "triomphe")))]
+impl<T> CheapClone for triomphe::Arc<T> {}
 
 #[cfg(feature = "alloc")]
 mod a {
