@@ -33,9 +33,6 @@ pub mod equivalentor;
 /// Types and traits for encoding and decoding.
 pub mod types;
 
-/// Utilities
-pub mod utils;
-
 #[doc(hidden)]
 pub mod __private {
   pub use paste;
@@ -159,4 +156,26 @@ macro_rules! builder {
       }
     )*
   };
+}
+
+/// Abort the process.
+#[inline(never)]
+#[cold]
+pub fn abort() -> ! {
+  #[cfg(feature = "std")]
+  {
+    std::process::abort()
+  }
+
+  #[cfg(not(feature = "std"))]
+  {
+    struct Abort;
+    impl Drop for Abort {
+      fn drop(&mut self) {
+        panic!();
+      }
+    }
+    let _a = Abort;
+    panic!("abort");
+  }
 }
