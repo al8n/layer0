@@ -188,6 +188,15 @@ pub struct MaybeStructured<'a, T: ?Sized> {
   data: Either<&'a T, &'a [u8]>,
 }
 
+impl<T: ?Sized> Clone for MaybeStructured<'_, T> {
+  #[inline]
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+
+impl<T: ?Sized> Copy for MaybeStructured<'_, T> {}
+
 impl<'a, T: 'a> PartialEq<T> for MaybeStructured<'a, T>
 where
   T: ?Sized + PartialEq + Type + for<'b> Equivalent<T::Ref<'b>>,
