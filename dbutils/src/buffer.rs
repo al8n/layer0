@@ -242,7 +242,7 @@ macro_rules! impl_put {
       paste::paste! {
         #[doc = "Puts a `" $ty "` to the buffer in little-endian format."]
         pub fn [< put_ $ty _le>](&mut self, value: $ty) -> Result<(), $crate::error::InsufficientBuffer> {
-          self.put_slice(&value.to_le_bytes())
+          self.put_slice(&value.to_le_bytes()).map(|_| ())
         }
 
         #[doc = "Puts a `" $ty "` to the buffer in little-endian format without bounds checking."]
@@ -255,7 +255,7 @@ macro_rules! impl_put {
 
         #[doc = "Puts a `" $ty "` to the buffer in big-endian format."]
         pub fn [< put_ $ty _be>](&mut self, value: $ty) -> Result<(), $crate::error::InsufficientBuffer> {
-          self.put_slice(&value.to_be_bytes())
+          self.put_slice(&value.to_be_bytes()).map(|_| ())
         }
 
         #[doc = "Puts a `" $ty "` to the buffer in big-endian format without bounds checking."]
@@ -448,7 +448,9 @@ impl VacantBuffer<'_> {
   }
 
   /// Put bytes to the vacant value.
-  pub fn put_slice(&mut self, bytes: &[u8]) -> Result<(), InsufficientBuffer> {
+  ///
+  /// Returns the number of bytes written if successful.
+  pub fn put_slice(&mut self, bytes: &[u8]) -> Result<usize, InsufficientBuffer> {
     let len = bytes.len();
     let remaining = self.cap - self.len;
     if len > remaining {
@@ -468,7 +470,7 @@ impl VacantBuffer<'_> {
     }
 
     self.len += len;
-    Ok(())
+    Ok(len)
   }
 
   /// Write bytes to the vacant value without bounds checking.
@@ -503,7 +505,7 @@ impl VacantBuffer<'_> {
 
   /// Put a byte to the vacant value.
   pub fn put_u8(&mut self, value: u8) -> Result<(), InsufficientBuffer> {
-    self.put_slice(&[value])
+    self.put_slice(&[value]).map(|_| ())
   }
 
   /// Put a byte to the vacant value without bounds checking.
@@ -516,7 +518,7 @@ impl VacantBuffer<'_> {
 
   /// Puts a `i8` to the buffer.
   pub fn put_i8(&mut self, value: i8) -> Result<(), InsufficientBuffer> {
-    self.put_slice(&[value as u8])
+    self.put_slice(&[value as u8]).map(|_| ())
   }
 
   /// Puts a `i8` to the buffer without bounds checking.

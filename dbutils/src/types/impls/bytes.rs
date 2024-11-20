@@ -31,14 +31,7 @@ macro_rules! impls {
 
           #[inline]
           fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-            let buf_len = buf.capacity();
-            let self_len = self.len();
-            if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
-            }
-
-            buf.put_slice_unchecked(self.as_ref());
-            Ok(self_len)
+            buf.put_slice(self.as_ref())
           }
 
           #[inline]
@@ -312,17 +305,7 @@ impl Type for [u8] {
 
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-    let self_len = self.len();
-    if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(
-        self_len as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self);
-    Ok(self_len)
+    buf.put_slice(self)
   }
 
   #[inline]
@@ -393,18 +376,9 @@ impl<const N: usize> Type for [u8; N] {
     Ok(N)
   }
 
+  #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-
-    if buf_len < N {
-      return Err(InsufficientBuffer::with_information(
-        N as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self.as_ref());
-    Ok(N)
+    buf.put_slice(self.as_ref())
   }
 
   #[inline]
@@ -566,17 +540,7 @@ const _: () = {
 
     #[inline]
     fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-      let buf_len = buf.capacity();
-      let self_len = self.len();
-      if buf_len < self_len {
-        return Err(InsufficientBuffer::with_information(
-          self_len as u64,
-          buf_len as u64,
-        ));
-      }
-
-      buf.put_slice_unchecked(self.as_ref());
-      Ok(self_len)
+      buf.put_slice(self.as_ref())
     }
 
     #[inline]

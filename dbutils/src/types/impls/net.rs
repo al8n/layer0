@@ -35,17 +35,7 @@ impl Type for Ipv4Addr {
 
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-
-    if buf_len < IPV4_ENCODED_LEN {
-      return Err(InsufficientBuffer::with_information(
-        IPV4_ENCODED_LEN as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self.octets().as_ref());
-    Ok(IPV4_ENCODED_LEN)
+    buf.put_slice(self.octets().as_ref())
   }
 }
 
@@ -103,17 +93,7 @@ impl Type for Ipv6Addr {
 
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-
-    if buf_len < IPV6_ENCODED_LEN {
-      return Err(InsufficientBuffer::with_information(
-        IPV6_ENCODED_LEN as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self.octets().as_ref());
-    Ok(IPV6_ENCODED_LEN)
+    buf.put_slice(self.octets().as_ref())
   }
 }
 
@@ -172,17 +152,8 @@ impl Type for SocketAddrV4 {
 
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-
-    if buf_len < SOCKET_V4_ENCODED_LEN {
-      return Err(InsufficientBuffer::with_information(
-        SOCKET_V4_ENCODED_LEN as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self.ip().octets().as_ref());
-    buf.put_u16_le_unchecked(self.port());
+    buf.put_slice(self.ip().octets().as_ref())?;
+    buf.put_u16_le(self.port())?;
     Ok(SOCKET_V4_ENCODED_LEN)
   }
 }
@@ -243,17 +214,8 @@ impl Type for SocketAddrV6 {
 
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-
-    if buf_len < SOCKET_V6_ENCODED_LEN {
-      return Err(InsufficientBuffer::with_information(
-        SOCKET_V6_ENCODED_LEN as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self.ip().octets().as_ref());
-    buf.put_u16_le_unchecked(self.port());
+    buf.put_slice(self.ip().octets().as_ref())?;
+    buf.put_u16_le(self.port())?;
     Ok(SOCKET_V6_ENCODED_LEN)
   }
 }

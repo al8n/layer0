@@ -30,14 +30,7 @@ macro_rules! impls {
           }
 
           fn encode_to_buffer(&self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> Result<usize, Self::Error> {
-            let buf_len = buf.capacity();
-            let self_len = self.len();
-            if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
-            }
-
-            buf.put_slice_unchecked(self.as_bytes());
-            Ok(self_len)
+            buf.put_slice(self.as_bytes())
           }
 
           #[inline]
@@ -273,17 +266,7 @@ impl Type for str {
 
   #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let buf_len = buf.capacity();
-    let self_len = self.len();
-    if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(
-        self_len as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.put_slice_unchecked(self.as_bytes());
-    Ok(self_len)
+    buf.put_slice(self.as_bytes())
   }
 
   #[inline]
