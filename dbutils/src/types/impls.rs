@@ -2,6 +2,30 @@ use crate::error::InsufficientBuffer;
 
 use super::*;
 
+macro_rules! impl_cmp {
+  ($outer:ident($inner:ty) $(@($ret:ty) $trait:ident::$method:ident($($ty:ty),+$(,)?)), +$(,)?) => {
+    $(
+      $(
+        impl $trait<$outer<'_>> for $ty {
+          #[inline]
+          fn $method(&self, other: &$outer<'_>) -> $ret {
+            let this: $inner = self.as_ref();
+            $trait::$method(this, other.0)
+          }
+        }
+
+        impl $trait<$ty> for $outer<'_> {
+          #[inline]
+          fn $method(&self, other: &$ty) -> $ret {
+            let this: $inner = other.as_ref();
+            $trait::$method(self.0, this)
+          }
+        }
+      )*
+    )*
+  };
+}
+
 mod bytes;
 pub use bytes::*;
 mod string;
@@ -44,7 +68,7 @@ impl<'a> TypeRef<'a> for () {
   }
 }
 
-macro_rules! impl_numbers {
+macro_rules! impl_type {
   ($($ty:ident), +$(,)?) => {
     $(
       impl Type for $ty {
@@ -55,19 +79,6 @@ macro_rules! impl_numbers {
         #[inline]
         fn encoded_len(&self) -> usize {
           core::mem::size_of::<$ty>()
-        }
-
-        #[inline]
-        fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-          const SIZE: usize = core::mem::size_of::<$ty>();
-
-          let buf_len = buf.len();
-          if buf_len < SIZE {
-            return Err($crate::error::InsufficientBuffer::with_information(SIZE as u64, buf_len as u64));
-          }
-
-          buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
-          Ok(SIZE)
         }
 
         #[inline]
@@ -84,6 +95,39 @@ macro_rules! impl_numbers {
           $ty::from_le_bytes(buf[..SIZE].try_into().unwrap())
         }
       }
+
+      #[cfg(test)]
+      paste::paste! {
+        proptest::proptest! {
+          #[test]
+          fn [<$ty _encode>](x in [< 0 $ty >]..[< $ty >]::MAX,) {
+            let mut buf = [0; core::mem::size_of::<$ty>()];
+            let encoded = x.encode(&mut buf).unwrap();
+            proptest::prop_assert_eq!(encoded, x.encoded_len());
+
+            let y = unsafe { $ty::from_slice(&buf) };
+            proptest::prop_assert_eq!(x, y);
+          }
+
+          #[test]
+          fn [< $ty _encode_to_buffer>](x in [< 0 $ty >]..[< $ty >]::MAX,) {
+            let mut buf = [0u8; core::mem::size_of::<$ty>()];
+            let mut buf = $crate::buffer::VacantBuffer::from(buf.as_mut());
+            let encoded = x.encode_to_buffer(&mut buf).unwrap();
+            proptest::prop_assert_eq!(encoded, x.encoded_len());
+            let y = unsafe { $ty::from_slice(buf.as_ref()) };
+            proptest::prop_assert_eq!(x, y);
+          }
+        }
+      }
+    )*
+  };
+}
+
+macro_rules! impl_numbers {
+  (@key $($ty:ident), +$(,)?) => {
+    $(
+      impl_type!($ty);
 
       impl KeyRef<'_, $ty> for $ty {
         #[inline]
@@ -105,91 +149,13 @@ macro_rules! impl_numbers {
       }
     )*
   };
+  ($($ty:ident), +$(,)?) => {
+    impl_type!($($ty),+);
+  };
 }
 
-impl_numbers!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-
-impl Type for f32 {
-  type Ref<'a> = Self;
-
-  type Error = InsufficientBuffer;
-
-  #[inline]
-  fn encoded_len(&self) -> usize {
-    core::mem::size_of::<f32>()
-  }
-
-  #[inline]
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-    const SIZE: usize = core::mem::size_of::<f32>();
-
-    let buf_len = buf.len();
-    if buf_len < SIZE {
-      return Err(InsufficientBuffer::with_information(
-        SIZE as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
-    Ok(SIZE)
-  }
-
-  #[inline]
-  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    buf.put_slice(self.to_le_bytes().as_ref())
-  }
-}
-
-impl TypeRef<'_> for f32 {
-  #[inline]
-  unsafe fn from_slice(buf: &[u8]) -> Self {
-    const SIZE: usize = core::mem::size_of::<f32>();
-
-    f32::from_le_bytes(buf[..SIZE].try_into().unwrap())
-  }
-}
-
-impl Type for f64 {
-  type Ref<'a> = Self;
-
-  type Error = InsufficientBuffer;
-
-  #[inline]
-  fn encoded_len(&self) -> usize {
-    core::mem::size_of::<f64>()
-  }
-
-  #[inline]
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-    const SIZE: usize = core::mem::size_of::<f64>();
-
-    let buf_len = buf.len();
-    if buf_len < SIZE {
-      return Err(InsufficientBuffer::with_information(
-        SIZE as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf[..SIZE].copy_from_slice(self.to_le_bytes().as_ref());
-    Ok(SIZE)
-  }
-
-  #[inline]
-  fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    buf.put_slice(self.to_le_bytes().as_ref())
-  }
-}
-
-impl TypeRef<'_> for f64 {
-  #[inline]
-  unsafe fn from_slice(buf: &[u8]) -> Self {
-    const SIZE: usize = core::mem::size_of::<f64>();
-
-    f64::from_le_bytes(buf[..SIZE].try_into().unwrap())
-  }
-}
+impl_numbers!(@key i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+impl_numbers!(f32, f64);
 
 impl Type for bool {
   type Ref<'a> = Self;
@@ -199,16 +165,6 @@ impl Type for bool {
   #[inline]
   fn encoded_len(&self) -> usize {
     1
-  }
-
-  #[inline]
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-    if buf.is_empty() {
-      return Err(InsufficientBuffer::with_information(1, 0));
-    }
-
-    buf[0] = *self as u8;
-    Ok(1)
   }
 
   #[inline]
@@ -250,19 +206,6 @@ impl Type for char {
   #[inline]
   fn encoded_len(&self) -> usize {
     self.len_utf8()
-  }
-
-  #[inline]
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-    let len = self.len_utf8();
-    if buf.len() < len {
-      return Err(InsufficientBuffer::with_information(
-        len as u64,
-        buf.len() as u64,
-      ));
-    }
-    self.encode_utf8(buf);
-    Ok(len)
   }
 
   #[inline]

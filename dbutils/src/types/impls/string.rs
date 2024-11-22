@@ -1,4 +1,4 @@
-use core::borrow::Borrow;
+use core::{borrow::Borrow, cmp::Ordering};
 
 use ::equivalent::Equivalent;
 
@@ -18,17 +18,7 @@ macro_rules! impls {
             self.len()
           }
 
-          fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-            let buf_len = buf.len();
-            let self_len = self.len();
-            if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
-            }
-
-            buf.copy_from_slice(self.as_bytes());
-            Ok(self_len)
-          }
-
+          #[inline]
           fn encode_to_buffer(&self, buf: &mut $crate::buffer::VacantBuffer<'_>) -> Result<usize, Self::Error> {
             buf.put_slice(self.as_bytes())
           }
@@ -39,100 +29,12 @@ macro_rules! impls {
           }
         }
 
-        impl PartialEq<Str<'_>> for $ty {
-          #[inline]
-          fn eq(&self, other: &Str<'_>) -> bool {
-            let this: &str = self.as_ref();
-            this == other.0
-          }
-        }
-
-        impl PartialEq<$ty> for Str<'_> {
-          #[inline]
-          fn eq(&self, other: &$ty) -> bool {
-            let this: &str = other.as_ref();
-            self.0 == this
-          }
-        }
-
-        impl PartialEq<Str<'_>> for &$ty {
-          #[inline]
-          fn eq(&self, other: &Str<'_>) -> bool {
-            let this: &str = self.as_ref();
-            this == other.0
-          }
-        }
-
-        impl PartialEq<&$ty> for Str<'_> {
-          #[inline]
-          fn eq(&self, other: &&$ty) -> bool {
-            let this: &str = other.as_ref();
-            self.0 == this
-          }
-        }
-
-        impl Equivalent<Str<'_>> for $ty {
-          #[inline]
-          fn equivalent(&self, key: &Str<'_>) -> bool {
-            let this: &str = self.as_ref();
-            this.eq(key.0)
-          }
-        }
-
-        impl Comparable<Str<'_>> for $ty {
-          #[inline]
-          fn compare(&self, other: &Str<'_>) -> cmp::Ordering {
-            let this: &str = self.as_ref();
-            this.cmp(other.0)
-          }
-        }
-
-        impl Equivalent<$ty> for Str<'_> {
-          #[inline]
-          fn equivalent(&self, key: &$ty) -> bool {
-            let that: &str = key.as_ref();
-            self.0.eq(that)
-          }
-        }
-
-        impl Comparable<$ty> for Str<'_> {
-          #[inline]
-          fn compare(&self, other: &$ty) -> cmp::Ordering {
-            let that: &str = other.as_ref();
-            self.0.cmp(that)
-          }
-        }
-
-        impl Equivalent<Str<'_>> for &$ty {
-          #[inline]
-          fn equivalent(&self, key: &Str<'_>) -> bool {
-            let this: &str = self.as_ref();
-            this.eq(key.0)
-          }
-        }
-
-        impl Comparable<Str<'_>> for &$ty {
-          #[inline]
-          fn compare(&self, other: &Str<'_>) -> cmp::Ordering {
-            let this: &str = self.as_ref();
-            this.cmp(other.0)
-          }
-        }
-
-        impl Equivalent<&$ty> for Str<'_> {
-          #[inline]
-          fn equivalent(&self, key: &&$ty) -> bool {
-            let that: &str = key.as_ref();
-            self.0.eq(that)
-          }
-        }
-
-        impl Comparable<&$ty> for Str<'_> {
-          #[inline]
-          fn compare(&self, other: &&$ty) -> cmp::Ordering {
-            let that: &str = other.as_ref();
-            self.0.cmp(that)
-          }
+        impl_cmp! {
+          Str(&str)
+          @(bool) PartialEq::eq($ty, &$ty),
+          @(bool) Equivalent::equivalent($ty, &$ty),
+          @(Ordering) Comparable::compare($ty, &$ty),
+          @(Option<Ordering>) PartialOrd::partial_cmp($ty, &$ty)
         }
       };
     )*
@@ -225,18 +127,6 @@ impl PartialOrd<str> for Str<'_> {
 impl PartialOrd<Str<'_>> for str {
   fn partial_cmp(&self, other: &Str<'_>) -> Option<cmp::Ordering> {
     Some(self.cmp(other.0))
-  }
-}
-
-impl PartialOrd<&str> for Str<'_> {
-  fn partial_cmp(&self, other: &&str) -> Option<cmp::Ordering> {
-    Some(self.0.cmp(*other))
-  }
-}
-
-impl PartialOrd<Str<'_>> for &str {
-  fn partial_cmp(&self, other: &Str<'_>) -> Option<cmp::Ordering> {
-    Some(self.cmp(&other.0))
   }
 }
 

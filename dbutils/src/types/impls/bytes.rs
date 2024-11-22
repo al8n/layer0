@@ -1,5 +1,5 @@
 use ::equivalent::*;
-use core::borrow::Borrow;
+use core::{borrow::Borrow, cmp::Ordering};
 
 use super::*;
 
@@ -18,18 +18,6 @@ macro_rules! impls {
           }
 
           #[inline]
-          fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-            let buf_len = buf.len();
-            let self_len = self.len();
-            if buf_len < self_len {
-              return Err(InsufficientBuffer::with_information(self_len as u64, buf_len as u64));
-            }
-
-            buf.copy_from_slice(self.as_ref());
-            Ok(self_len)
-          }
-
-          #[inline]
           fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
             buf.put_slice(self.as_ref())
           }
@@ -40,100 +28,12 @@ macro_rules! impls {
           }
         }
 
-        impl PartialEq<SliceRef<'_>> for $ty {
-          #[inline]
-          fn eq(&self, other: &SliceRef<'_>) -> bool {
-            let this: &[u8] = self.as_ref();
-            this == other.0
-          }
-        }
-
-        impl PartialEq<$ty> for SliceRef<'_> {
-          #[inline]
-          fn eq(&self, other: &$ty) -> bool {
-            let this: &[u8] = other.as_ref();
-            self.0 == this
-          }
-        }
-
-        impl PartialEq<SliceRef<'_>> for &$ty {
-          #[inline]
-          fn eq(&self, other: &SliceRef<'_>) -> bool {
-            let this: &[u8] = self.as_ref();
-            this == other.0
-          }
-        }
-
-        impl PartialEq<&$ty> for SliceRef<'_> {
-          #[inline]
-          fn eq(&self, other: &&$ty) -> bool {
-            let this: &[u8] = other.as_ref();
-            self.0 == this
-          }
-        }
-
-        impl Equivalent<SliceRef<'_>> for $ty {
-          #[inline]
-          fn equivalent(&self, key: &SliceRef<'_>) -> bool {
-            let this: &[u8] = self.as_ref();
-            this.eq(key.0)
-          }
-        }
-
-        impl Comparable<SliceRef<'_>> for $ty {
-          #[inline]
-          fn compare(&self, other: &SliceRef<'_>) -> cmp::Ordering {
-            let this: &[u8] = self.as_ref();
-            this.cmp(other.0)
-          }
-        }
-
-        impl Equivalent<$ty> for SliceRef<'_> {
-          #[inline]
-          fn equivalent(&self, key: &$ty) -> bool {
-            let that: &[u8] = key.as_ref();
-            self.0.eq(that)
-          }
-        }
-
-        impl Comparable<$ty> for SliceRef<'_> {
-          #[inline]
-          fn compare(&self, other: &$ty) -> cmp::Ordering {
-            let that: &[u8] = other.as_ref();
-            self.0.cmp(that)
-          }
-        }
-
-        impl Equivalent<SliceRef<'_>> for &$ty {
-          #[inline]
-          fn equivalent(&self, key: &SliceRef<'_>) -> bool {
-            let this: &[u8] = self.as_ref();
-            this.eq(key.0)
-          }
-        }
-
-        impl Comparable<SliceRef<'_>> for &$ty {
-          #[inline]
-          fn compare(&self, other: &SliceRef<'_>) -> cmp::Ordering {
-            let this: &[u8] = self.as_ref();
-            this.cmp(other.0)
-          }
-        }
-
-        impl Equivalent<&$ty> for SliceRef<'_> {
-          #[inline]
-          fn equivalent(&self, key: &&$ty) -> bool {
-            let that: &[u8] = key.as_ref();
-            self.0.eq(that)
-          }
-        }
-
-        impl Comparable<&$ty> for SliceRef<'_> {
-          #[inline]
-          fn compare(&self, other: &&$ty) -> cmp::Ordering {
-            let that: &[u8] = other.as_ref();
-            self.0.cmp(that)
-          }
+        impl_cmp! {
+          SliceRef(&[u8])
+          @(bool) PartialEq::eq($ty, &$ty),
+          @(bool) Equivalent::equivalent($ty, &$ty),
+          @(Ordering) Comparable::compare($ty, &$ty),
+          @(Option<Ordering>) PartialOrd::partial_cmp($ty, &$ty),
         }
       };
     )*
@@ -289,21 +189,6 @@ impl Type for [u8] {
   }
 
   #[inline]
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-    let buf_len = buf.len();
-    let self_len = self.len();
-    if buf_len < self_len {
-      return Err(InsufficientBuffer::with_information(
-        self_len as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf.copy_from_slice(self);
-    Ok(self_len)
-  }
-
-  #[inline]
   fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
     buf.put_slice(self)
   }
@@ -360,20 +245,6 @@ impl<const N: usize> Type for [u8; N] {
   #[inline(always)]
   fn encoded_len(&self) -> usize {
     N
-  }
-
-  fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-    let buf_len = buf.len();
-
-    if buf_len < N {
-      return Err(InsufficientBuffer::with_information(
-        N as u64,
-        buf_len as u64,
-      ));
-    }
-
-    buf[..N].copy_from_slice(self.as_ref());
-    Ok(N)
   }
 
   #[inline]

@@ -48,3 +48,5 @@ tracing = { version = "0.1", default-features = false, optional = true }
 
 [dev-dependencies]
 rstest = "0.22"
+quickcheck = "1"
+proptest = "1"
