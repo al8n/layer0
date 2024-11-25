@@ -267,10 +267,12 @@ impls! {
   ::std::string::String,
   #[cfg(feature = "alloc")]
   ::std::sync::Arc<str>,
+  #[cfg(feature = "triomphe01")]
+  ::triomphe01::Arc<str>,
   #[cfg(feature = "alloc")]
   ::std::boxed::Box<str>,
-  #[cfg(feature = "smol_str")]
-  ::smol_str::SmolStr,
-  #[cfg(feature = "faststr")]
-  ::faststr::FastStr,
+  #[cfg(feature = "smol_str03")]
+  ::smol_str03::SmolStr,
+  #[cfg(feature = "faststr02")]
+  ::faststr02::FastStr,
 }

@@ -72,8 +72,8 @@ const _: () = {
 
   impl_traits!(std::sync::Arc<C>, std::rc::Rc<C>,);
 
-  #[cfg(feature = "triomphe")]
-  impl_traits!(triomphe::Arc<C>);
+  #[cfg(feature = "triomphe01")]
+  impl_traits!(triomphe01::Arc<C>);
 };
 
 impl<C: StaticEquivalentor> StaticEquivalentor for Reverse<C> {

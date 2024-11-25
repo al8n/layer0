@@ -30,17 +30,17 @@ pub trait BufWriter {
   fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error>;
 }
 
-impl<A: Borrow<[u8]>> BufWriter for A {
+impl<A: AsRef<[u8]>> BufWriter for A {
   type Error = InsufficientBuffer;
 
   #[inline]
   fn encoded_len(&self) -> usize {
-    self.borrow().len()
+    self.as_ref().len()
   }
 
   #[inline]
   fn write(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-    let src = self.borrow();
+    let src = self.as_ref();
     buf.put_slice(src).map(|_| src.len())
   }
 }

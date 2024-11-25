@@ -108,20 +108,6 @@ impl core::ops::Deref for SliceRef<'_> {
   }
 }
 
-impl PartialEq<[u8]> for SliceRef<'_> {
-  #[inline]
-  fn eq(&self, other: &[u8]) -> bool {
-    self.0 == other
-  }
-}
-
-impl PartialEq<SliceRef<'_>> for [u8] {
-  #[inline]
-  fn eq(&self, other: &SliceRef<'_>) -> bool {
-    self == other.0
-  }
-}
-
 impl<'a, K> KeyRef<'a, K> for SliceRef<'a>
 where
   K: ?Sized + Type<Ref<'a> = SliceRef<'a>>,
@@ -291,61 +277,43 @@ impl<const N: usize> KeyRef<'_, [u8; N]> for [u8; N] {
   }
 }
 
-impl<const N: usize> Equivalent<[u8; N]> for SliceRef<'_> {
-  #[inline]
-  fn equivalent(&self, key: &[u8; N]) -> bool {
-    self.0 == key
-  }
+macro_rules! impl_cmp_for_array {
+  ($outer:ident($inner:ty) $(@($ret:ty) $trait:ident::$method:ident($($ty:ty),+$(,)?)), +$(,)?) => {
+    $(
+      $(
+        impl<const N: usize> $trait<SliceRef<'_>> for $ty {
+          #[inline]
+          fn $method(&self, other: &$outer<'_>) -> $ret {
+            let this: $inner = self.as_ref();
+            $trait::$method(this, other.0)
+          }
+        }
+
+        impl<const N: usize> $trait<$ty> for SliceRef<'_> {
+          #[inline]
+          fn $method(&self, other: &$ty) -> $ret {
+            let this: $inner = other.as_ref();
+            $trait::$method(self.0, this)
+          }
+        }
+      )*
+    )*
+  };
 }
 
-impl<const N: usize> Comparable<[u8; N]> for SliceRef<'_> {
-  #[inline]
-  fn compare(&self, key: &[u8; N]) -> cmp::Ordering {
-    self.0.cmp(key)
-  }
-}
+impl_cmp_for_array!(
+  SliceRef(&[u8])
+  @(bool) PartialEq::eq([u8; N], &[u8; N]),
+  @(bool) Equivalent::equivalent([u8; N], &[u8; N]),
+  @(Option<Ordering>) PartialOrd::partial_cmp([u8; N], &[u8; N]),
+  @(Ordering) Comparable::compare([u8; N], &[u8; N]),
+);
 
-impl<const N: usize> Equivalent<SliceRef<'_>> for [u8; N] {
-  #[inline]
-  fn equivalent(&self, key: &SliceRef<'_>) -> bool {
-    self == key.0
-  }
-}
-
-impl<const N: usize> Comparable<SliceRef<'_>> for [u8; N] {
-  #[inline]
-  fn compare(&self, key: &SliceRef<'_>) -> cmp::Ordering {
-    self.as_ref().cmp(key.0)
-  }
-}
-
-impl<const N: usize> PartialEq<SliceRef<'_>> for [u8; N] {
-  #[inline]
-  fn eq(&self, other: &SliceRef<'_>) -> bool {
-    self.as_ref() == other.0
-  }
-}
-
-impl<const N: usize> PartialEq<[u8; N]> for SliceRef<'_> {
-  #[inline]
-  fn eq(&self, other: &[u8; N]) -> bool {
-    self.0 == other.as_ref()
-  }
-}
-
-impl<const N: usize> PartialEq<SliceRef<'_>> for &[u8; N] {
-  #[inline]
-  fn eq(&self, other: &SliceRef<'_>) -> bool {
-    self.as_ref() == other.0
-  }
-}
-
-impl<const N: usize> PartialEq<&[u8; N]> for SliceRef<'_> {
-  #[inline]
-  fn eq(&self, other: &&[u8; N]) -> bool {
-    self.0 == other.as_ref()
-  }
-}
+impl_cmp!(
+  SliceRef(&[u8])
+  @(bool) PartialEq::eq([u8]),
+  @(Option<Ordering>) PartialOrd::partial_cmp([u8]),
+);
 
 impls! {
   #[cfg(feature = "alloc")]
@@ -357,130 +325,71 @@ impls! {
   ::std::boxed::Box<[u8]>,
   #[cfg(feature = "alloc")]
   ::std::sync::Arc<[u8]>,
-  #[cfg(feature = "bytes")]
-  ::bytes::Bytes,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::OneOrMore<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::TinyVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::TriVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::SmallVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::MediumVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::LargeVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::XLargeVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::XXLargeVec<u8>,
-  #[cfg(feature = "smallvec-wrapper")]
-  ::smallvec_wrapper::XXXLargeVec<u8>,
+  #[cfg(feature = "triomphe01")]
+  ::triomphe01::Arc<[u8]>,
+  #[cfg(feature = "bytes1")]
+  ::bytes1::Bytes,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::OneOrMore<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::TinyVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::TriVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::SmallVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::MediumVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::LargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::XLargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::XXLargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper01")]
+  ::smallvec_wrapper01::XXXLargeVec<u8>,
 }
 
-#[cfg(feature = "smallvec")]
-const _: () = {
-  use smallvec::SmallVec;
+#[cfg(any(feature = "smallvec01", feature = "smallvec02"))]
+macro_rules! smallvec {
+  ($pkg:ident::$ty:ty) => {
+    const _: () = {
+      use $pkg::SmallVec;
 
-  use super::*;
+      use super::*;
 
-  impl<const N: usize> Type for SmallVec<[u8; N]> {
-    type Ref<'a> = SliceRef<'a>;
-    type Error = InsufficientBuffer;
+      impl<const N: usize> Type for $ty {
+        type Ref<'a> = SliceRef<'a>;
+        type Error = InsufficientBuffer;
 
-    #[inline]
-    fn encoded_len(&self) -> usize {
-      self.len()
-    }
+        #[inline]
+        fn encoded_len(&self) -> usize {
+          self.len()
+        }
 
-    #[inline]
-    fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-      let buf_len = buf.len();
-      let self_len = self.len();
-      if buf_len < self_len {
-        return Err(InsufficientBuffer::with_information(
-          self_len as u64,
-          buf_len as u64,
-        ));
+        #[inline]
+        fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
+          buf.put_slice(self.as_ref())
+        }
+
+        #[inline]
+        fn as_encoded(&self) -> Option<&[u8]> {
+          Some(self.as_ref())
+        }
       }
 
-      buf.copy_from_slice(self.as_ref());
-      Ok(self_len)
-    }
+      impl_cmp_for_array! {
+        SliceRef(&[u8])
+        @(bool) PartialEq::eq($ty, &$ty),
+        @(bool) Equivalent::equivalent($ty, &$ty),
+        @(Ordering) Comparable::compare($ty, &$ty),
+        @(Option<Ordering>) PartialOrd::partial_cmp($ty, &$ty),
+      }
+    };
+  };
+}
 
-    #[inline]
-    fn encode_to_buffer(&self, buf: &mut VacantBuffer<'_>) -> Result<usize, Self::Error> {
-      buf.put_slice(self.as_ref())
-    }
+#[cfg(feature = "smallvec01")]
+smallvec!(smallvec01::SmallVec<[u8; N]>);
 
-    #[inline]
-    fn as_encoded(&self) -> Option<&[u8]> {
-      Some(self.as_ref())
-    }
-  }
-
-  impl<const N: usize> Equivalent<SliceRef<'_>> for SmallVec<[u8; N]> {
-    #[inline]
-    fn equivalent(&self, key: &SliceRef<'_>) -> bool {
-      let this: &[u8] = self.as_ref();
-      this.eq(key.0)
-    }
-  }
-
-  impl<const N: usize> Comparable<SliceRef<'_>> for SmallVec<[u8; N]> {
-    #[inline]
-    fn compare(&self, other: &SliceRef<'_>) -> cmp::Ordering {
-      let this: &[u8] = self.as_ref();
-      this.cmp(other.0)
-    }
-  }
-
-  impl<const N: usize> Equivalent<SmallVec<[u8; N]>> for SliceRef<'_> {
-    #[inline]
-    fn equivalent(&self, key: &SmallVec<[u8; N]>) -> bool {
-      let that: &[u8] = key.as_ref();
-      self.0.eq(that)
-    }
-  }
-
-  impl<const N: usize> Comparable<SmallVec<[u8; N]>> for SliceRef<'_> {
-    #[inline]
-    fn compare(&self, other: &SmallVec<[u8; N]>) -> cmp::Ordering {
-      let that: &[u8] = other.as_ref();
-      self.0.cmp(that)
-    }
-  }
-
-  impl<const N: usize> PartialEq<SliceRef<'_>> for SmallVec<[u8; N]> {
-    #[inline]
-    fn eq(&self, other: &SliceRef<'_>) -> bool {
-      let this: &[u8] = self.as_ref();
-      this == other.0
-    }
-  }
-
-  impl<const N: usize> PartialEq<SmallVec<[u8; N]>> for SliceRef<'_> {
-    #[inline]
-    fn eq(&self, other: &SmallVec<[u8; N]>) -> bool {
-      let this: &[u8] = other.as_ref();
-      self.0 == this
-    }
-  }
-
-  impl<const N: usize> PartialEq<SliceRef<'_>> for &SmallVec<[u8; N]> {
-    #[inline]
-    fn eq(&self, other: &SliceRef<'_>) -> bool {
-      let this: &[u8] = self.as_ref();
-      this == other.0
-    }
-  }
-
-  impl<const N: usize> PartialEq<&SmallVec<[u8; N]>> for SliceRef<'_> {
-    #[inline]
-    fn eq(&self, other: &&SmallVec<[u8; N]>) -> bool {
-      let this: &[u8] = other.as_ref();
-      self.0 == this
-    }
-  }
-};
+#[cfg(feature = "smallvec02")]
+smallvec!(smallvec02::SmallVec<u8, N>);

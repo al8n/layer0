@@ -36,10 +36,10 @@ macro_rules! impl_cheap_clone_for_copy {
 /// Eg:
 /// - ✔ [`Arc<T>`](alloc::sync::Arc)
 /// - ✔ [`Rc<T>`](alloc::rc::Rc)
-/// - ✔ [`Bytes`](bytes::Bytes)
+/// - ✔ [`Bytes`](bytes1::Bytes)
 /// - ✗ [`Vec<T>`](alloc::vec::Vec)
-/// - ✔ [`SmolStr`](smol_str::SmolStr)
-/// - ✔ [`FastStr`](faststr::FastStr)
+/// - ✔ [`SmolStr`](smol_str03::SmolStr)
+/// - ✔ [`FastStr`](faststr02::FastStr)
 /// - ✗ [`String`]
 pub trait CheapClone: Clone {
   /// Returns a copy of the value.
@@ -48,21 +48,21 @@ pub trait CheapClone: Clone {
   }
 }
 
-#[cfg(feature = "bytes")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bytes")))]
-impl CheapClone for bytes::Bytes {}
+#[cfg(feature = "bytes1")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bytes1")))]
+impl CheapClone for bytes1::Bytes {}
 
-#[cfg(feature = "smol_str")]
-#[cfg_attr(docsrs, doc(cfg(feature = "smol_str")))]
-impl CheapClone for smol_str::SmolStr {}
+#[cfg(feature = "smol_str03")]
+#[cfg_attr(docsrs, doc(cfg(feature = "smol_str03")))]
+impl CheapClone for smol_str03::SmolStr {}
 
-#[cfg(feature = "faststr")]
-#[cfg_attr(docsrs, doc(cfg(feature = "faststr")))]
-impl CheapClone for faststr::FastStr {}
+#[cfg(feature = "faststr02")]
+#[cfg_attr(docsrs, doc(cfg(feature = "faststr02")))]
+impl CheapClone for faststr02::FastStr {}
 
-#[cfg(feature = "triomphe")]
-#[cfg_attr(docsrs, doc(cfg(feature = "triomphe")))]
-impl<T> CheapClone for triomphe::Arc<T> {}
+#[cfg(feature = "triomphe01")]
+#[cfg_attr(docsrs, doc(cfg(feature = "triomphe01")))]
+impl<T> CheapClone for triomphe01::Arc<T> {}
 
 #[cfg(feature = "alloc")]
 mod a {
