@@ -73,7 +73,7 @@ where
   /// Compare `a` to `b` and return `true` if they are equal.
   fn equivalent<B>(&self, a: &A, b: &B) -> bool
   where
-    B: ?Sized;
+    B: ?Sized + Equivalent<A>;
 }
 
 /// Custom ordering trait.
@@ -86,7 +86,7 @@ where
   /// Compare `a` to `b` and return their ordering.
   fn compare<B>(&self, a: &A, b: &B) -> cmp::Ordering
   where
-    B: ?Sized;
+    B: ?Sized + Comparable<A>;
 }
 
 /// `RangeComparator` is implemented as an extention to `Comparator` to
@@ -98,7 +98,7 @@ where
   /// Returns `true` if `item` is contained in the range.
   fn compare_contains<R, Q>(&self, range: &R, item: &A) -> bool
   where
-    Q: ?Sized,
+    Q: ?Sized + Comparable<A>,
     R: ?Sized + RangeBounds<Q>,
   {
     let start = match range.start_bound() {
@@ -132,7 +132,7 @@ const _: () = {
           #[inline]
           fn equivalent<B>(&self, a: &A, b: &B) -> bool
           where
-            B: ?Sized,
+            B: ?Sized + Equivalent<A>,
           {
             (**self).equivalent(a, b)
           }
@@ -142,7 +142,7 @@ const _: () = {
           #[inline]
           fn compare<B>(&self, a: &A, b: &B) -> cmp::Ordering
           where
-            B: ?Sized,
+            B: ?Sized + Comparable<A>,
           {
             (**self).compare(a, b)
           }
