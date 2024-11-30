@@ -4,7 +4,8 @@ use {
     borrow::Borrow,
     cmp::{self, Ordering, Reverse},
     ops::{Bound, RangeBounds},
-  }, equivalent::{Comparable, Equivalent},
+  },
+  equivalent::{Comparable, Equivalent},
 };
 
 /// Custom equivalence trait.
@@ -61,42 +62,36 @@ where
   A: ?Sized,
   B: ?Sized,
   C: DynComparator<A, B>,
-{}
+{
+}
 
 /// Custom equivalence trait.
 ///
 /// Comparing to [`DynEquivalentor`], `Equivalentor` is not object-safe, but it can store some information about how to compare.
-pub trait Equivalentor<A>
-where
-  A: ?Sized,
-{
+pub trait Equivalentor {
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn equivalent<B>(&self, a: &A, b: &B) -> bool
+  fn equivalent<A, B>(&self, a: &A, b: &B) -> bool
   where
+    A: ?Sized,
     B: ?Sized + Equivalent<A>;
 }
 
 /// Custom ordering trait.
 ///
 /// Comparing to [`DynComparator`], `Comparator` is not object-safe, but it can store some information about how to compare.
-pub trait Comparator<A>: Equivalentor<A>
-where
-  A: ?Sized,
-{
+pub trait Comparator: Equivalentor {
   /// Compare `a` to `b` and return their ordering.
-  fn compare<B>(&self, a: &A, b: &B) -> cmp::Ordering
+  fn compare<A, B>(&self, a: &A, b: &B) -> cmp::Ordering
   where
+    A: ?Sized,
     B: ?Sized + Comparable<A>;
 }
 
 /// `RangeComparator` is implemented as an extention to `Comparator` to
 /// allow for comparison of items with range bounds.
-pub trait RangeComparator<A>: Comparator<A>
-where
-  A: ?Sized,
-{
+pub trait RangeComparator: Comparator {
   /// Returns `true` if `item` is contained in the range.
-  fn compare_contains<R, Q>(&self, range: &R, item: &A) -> bool
+  fn compare_contains<A, R, Q>(&self, range: &R, item: &A) -> bool
   where
     Q: ?Sized + Comparable<A>,
     R: ?Sized + RangeBounds<Q>,
@@ -117,31 +112,29 @@ where
   }
 }
 
-impl<A, C> RangeComparator<A> for C
-where
-  A: ?Sized,
-  C: Comparator<A>,
-{}
+impl<C> RangeComparator for C where C: Comparator {}
 
 #[cfg(any(feature = "std", feature = "alloc"))]
 const _: () = {
   macro_rules! impl_traits {
     ($($ty:ty),+$(,)?) => {
       $(
-        impl<A, C: Equivalentor<A>> Equivalentor<A> for $ty {
+        impl<C: Equivalentor> Equivalentor for $ty {
           #[inline]
-          fn equivalent<B>(&self, a: &A, b: &B) -> bool
+          fn equivalent<A, B>(&self, a: &A, b: &B) -> bool
           where
+            A: ?Sized,
             B: ?Sized + Equivalent<A>,
           {
             (**self).equivalent(a, b)
           }
         }
 
-        impl<A, C: Comparator<A>> Comparator<A> for $ty {
+        impl<C: Comparator> Comparator for $ty {
           #[inline]
-          fn compare<B>(&self, a: &A, b: &B) -> cmp::Ordering
+          fn compare<A, B>(&self, a: &A, b: &B) -> cmp::Ordering
           where
+            A: ?Sized,
             B: ?Sized + Comparable<A>,
           {
             (**self).compare(a, b)
@@ -214,14 +207,15 @@ impl<A, B, C> StaticRangeComparator<A, B> for C
 where
   A: ?Sized,
   B: ?Sized,
-  C: StaticComparator<A, B>
-{}
+  C: StaticComparator<A, B>,
+{
+}
 
 impl<A, B, C> DynEquivalentor<A, B> for C
 where
   A: ?Sized,
   B: ?Sized,
-  C: StaticEquivalentor<A, B>
+  C: StaticEquivalentor<A, B>,
 {
   #[inline]
   fn equivalent(&self, a: &A, b: &B) -> bool {
@@ -233,7 +227,7 @@ impl<A, B, C> DynComparator<A, B> for C
 where
   A: ?Sized,
   B: ?Sized,
-  C: StaticComparator<A, B>
+  C: StaticComparator<A, B>,
 {
   #[inline]
   fn compare(&self, a: &A, b: &B) -> cmp::Ordering {
@@ -325,7 +319,7 @@ where
 mod tests {
   use core::cmp;
 
-  use super::{Ascend, DynComparator, Descend, DynEquivalentor, DynRangeComparator, Reverse};
+  use super::{Ascend, Descend, DynComparator, DynEquivalentor, DynRangeComparator, Reverse};
 
   #[test]
   fn test_desc() {
@@ -333,7 +327,11 @@ mod tests {
     assert_eq!(desc.compare(b"abc", b"def"), cmp::Ordering::Greater);
     assert_eq!(desc.compare(b"def", b"abc"), cmp::Ordering::Less);
     assert_eq!(desc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
-    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(&desc, &("b".as_bytes().."a".as_bytes()), "b".as_bytes()));
+    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(
+      &desc,
+      &("b".as_bytes().."a".as_bytes()),
+      "b".as_bytes()
+    ));
   }
 
   #[test]
@@ -343,7 +341,11 @@ mod tests {
     assert_eq!(desc.compare(b"def", b"abc"), cmp::Ordering::Greater);
     assert_eq!(desc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
 
-    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(&desc, &("a".as_bytes()..="d".as_bytes()), "b".as_bytes()));
+    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(
+      &desc,
+      &("a".as_bytes()..="d".as_bytes()),
+      "b".as_bytes()
+    ));
   }
 
   #[test]
@@ -353,7 +355,11 @@ mod tests {
     assert_eq!(asc.compare(b"def", b"abc"), cmp::Ordering::Greater);
     assert_eq!(asc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
 
-    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(&asc, &("a".as_bytes().."d".as_bytes()), "b".as_bytes()));
+    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(
+      &asc,
+      &("a".as_bytes().."d".as_bytes()),
+      "b".as_bytes()
+    ));
   }
 
   #[test]
@@ -363,6 +369,10 @@ mod tests {
     assert_eq!(asc.compare(b"def", b"abc"), cmp::Ordering::Less);
     assert_eq!(asc.compare(b"abc", b"abc"), cmp::Ordering::Equal);
     assert!(asc.equivalent(b"a", b"a"));
-    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(&asc, &("d".as_bytes()..="a".as_bytes()), "d".as_bytes()));
+    assert!(DynRangeComparator::<[u8], [u8]>::compare_contains(
+      &asc,
+      &("d".as_bytes()..="a".as_bytes()),
+      "d".as_bytes()
+    ));
   }
 }
