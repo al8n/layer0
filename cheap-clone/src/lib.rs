@@ -1,13 +1,11 @@
+// `CheapClone` trait is inspired by https://github.com/graphprotocol/graph-node/blob/master/graph/src/cheap_clone.rs
+
 //! A trait which indicates that such type can be cloned cheaply.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
-
-/**
- * `CheapClone` trait is inspired by https://github.com/graphprotocol/graph-node/blob/master/graph/src/cheap_clone.rs
- */
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -70,7 +68,6 @@ mod a {
 
   impl<T: ?Sized> CheapClone for alloc::rc::Rc<T> {}
   impl<T: ?Sized> CheapClone for alloc::sync::Arc<T> {}
-  impl<T: CheapClone> CheapClone for alloc::boxed::Box<T> {}
 }
 
 #[cfg(feature = "std")]
