@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.11.1"
+version = "0.12.6"
 repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"

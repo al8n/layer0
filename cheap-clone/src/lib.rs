@@ -1,13 +1,11 @@
+// `CheapClone` trait is inspired by https://github.com/graphprotocol/graph-node/blob/master/graph/src/cheap_clone.rs
+
 //! A trait which indicates that such type can be cloned cheaply.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
-
-/**
- * `CheapClone` trait is inspired by https://github.com/graphprotocol/graph-node/blob/master/graph/src/cheap_clone.rs
- */
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -70,7 +68,6 @@ mod a {
 
   impl<T: ?Sized> CheapClone for alloc::rc::Rc<T> {}
   impl<T: ?Sized> CheapClone for alloc::sync::Arc<T> {}
-  impl<T: CheapClone> CheapClone for alloc::boxed::Box<T> {}
 }
 
 #[cfg(feature = "std")]
@@ -89,12 +86,48 @@ mod s {
   );
 }
 
-impl<T: CheapClone> CheapClone for Option<T> {}
-impl<T: CheapClone, E: CheapClone> CheapClone for Result<T, E> {}
+impl<T: CheapClone> CheapClone for core::cmp::Reverse<T> {
+  #[inline]
+  fn cheap_clone(&self) -> Self {
+    core::cmp::Reverse(self.0.cheap_clone())
+  }
+}
+impl<T: CheapClone> CheapClone for Option<T> {
+  #[inline]
+  fn cheap_clone(&self) -> Self {
+    self.as_ref().map(CheapClone::cheap_clone)
+  }
+}
+impl<T: CheapClone, E: CheapClone> CheapClone for Result<T, E> {
+  #[inline]
+  fn cheap_clone(&self) -> Self {
+    match self {
+      Ok(ok) => Ok(ok.cheap_clone()),
+      Err(err) => Err(err.cheap_clone()),
+    }
+  }
+}
 #[cfg(feature = "either")]
-impl<L: CheapClone, R: CheapClone> CheapClone for either::Either<L, R> {}
+impl<L: CheapClone, R: CheapClone> CheapClone for either::Either<L, R> {
+  #[inline]
+  fn cheap_clone(&self) -> Self {
+    match self {
+      either::Either::Left(left) => either::Either::Left(left.cheap_clone()),
+      either::Either::Right(right) => either::Either::Right(right.cheap_clone()),
+    }
+  }
+}
 #[cfg(feature = "among")]
-impl<L: CheapClone, M: CheapClone, R: CheapClone> CheapClone for among::Among<L, M, R> {}
+impl<L: CheapClone, M: CheapClone, R: CheapClone> CheapClone for among::Among<L, M, R> {
+  #[inline]
+  fn cheap_clone(&self) -> Self {
+    match self {
+      among::Among::Left(left) => among::Among::Left(left.cheap_clone()),
+      among::Among::Middle(middle) => among::Among::Middle(middle.cheap_clone()),
+      among::Among::Right(right) => among::Among::Right(right.cheap_clone()),
+    }
+  }
+}
 
 impl_cheap_clone_for_copy! {
   (),
