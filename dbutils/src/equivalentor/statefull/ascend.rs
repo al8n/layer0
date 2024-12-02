@@ -39,6 +39,13 @@ impl<A: ?Sized> CheapClone for Ascend<A> {}
 
 impl<A: ?Sized> Copy for Ascend<A> {}
 
+impl<A: ?Sized> PartialEq for Ascend<A> {
+  #[inline]
+  fn eq(&self, other: &Self) -> bool {
+    self.0.eq(&other.0)
+  }
+}
+
 impl<A: ?Sized> core::fmt::Debug for Ascend<A> {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     f.debug_struct("Ascend").finish()

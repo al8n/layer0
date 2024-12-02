@@ -45,6 +45,13 @@ impl<C: ?Sized> core::fmt::Debug for Reverse<C> {
   }
 }
 
+impl<C: ?Sized> PartialEq for Reverse<C> {
+  #[inline]
+  fn eq(&self, other: &Self) -> bool {
+    self.0.eq(&other.0)
+  }
+}
+
 impl<C> StaticEquivalentor for Reverse<C>
 where
   C: StaticEquivalentor + ?Sized,

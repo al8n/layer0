@@ -45,6 +45,13 @@ impl<A: ?Sized> core::fmt::Debug for Descend<A> {
   }
 }
 
+impl<A: ?Sized> PartialEq for Descend<A> {
+  #[inline]
+  fn eq(&self, other: &Self) -> bool {
+    self.0.eq(&other.0)
+  }
+}
+
 impl<A> Equivalentor for Descend<A>
 where
   A: Eq + ?Sized,
