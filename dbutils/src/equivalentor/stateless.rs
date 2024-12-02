@@ -66,7 +66,7 @@ pub trait StaticQueryComparator<Q: ?Sized>: StaticComparator + StaticQueryEquiva
 }
 
 /// Stateless ordering trait.
-pub trait StaticTypeRefComparator<'a>: StaticTypeRefEquivalentor<'a>
+pub trait StaticTypeRefComparator<'a>: StaticComparator + StaticTypeRefEquivalentor<'a>
 where
   Self::Type: Type,
 {

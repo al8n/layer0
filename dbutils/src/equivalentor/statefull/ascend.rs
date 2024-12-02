@@ -10,7 +10,7 @@ use super::{
   TypeRefEquivalentor, TypeRefQueryComparator, TypeRefQueryEquivalentor,
 };
 
-/// Ascend is a comparator that compares byte slices in ascending order.
+/// Ascend is a comparator that compares items in ascending order.
 pub struct Ascend<A: ?Sized>(PhantomData<A>);
 
 impl<A: ?Sized> Ascend<A> {

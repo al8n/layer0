@@ -59,7 +59,7 @@ pub trait Comparator: Equivalentor {
 }
 
 /// Statefull custom ordering trait.
-pub trait TypeRefComparator<'a>: TypeRefEquivalentor<'a>
+pub trait TypeRefComparator<'a>: Comparator + TypeRefEquivalentor<'a>
 where
   Self::Type: Type,
 {
