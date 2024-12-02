@@ -5,7 +5,14 @@ use core::{
 
 use crate::types::Type;
 
-/// Custom equivalence trait.
+pub use ascend::*;
+pub use descend::*;
+
+mod ascend;
+mod descend;
+mod reverse;
+
+/// Statefull custom equivalence trait.
 pub trait Equivalentor {
   /// The base type for comparison.
   type Type: ?Sized;
@@ -14,7 +21,7 @@ pub trait Equivalentor {
   fn equivalent(&self, a: &Self::Type, b: &Self::Type) -> bool;
 }
 
-/// Custom equivalence trait.
+/// Statefull custom equivalence trait.
 pub trait TypeRefEquivalentor<'a>: Equivalentor
 where
   Self::Type: Type,
@@ -30,7 +37,7 @@ where
   ) -> bool;
 }
 
-/// Custom equivalence trait for query purpose.
+/// Statefull custom equivalence trait for query purpose.
 pub trait TypeRefQueryEquivalentor<'a, Q: ?Sized>: TypeRefEquivalentor<'a>
 where
   Self::Type: Type,
@@ -39,20 +46,20 @@ where
   fn query_equivalent_ref(&self, a: &<Self::Type as Type>::Ref<'a>, b: &Q) -> bool;
 }
 
-/// Custom equivalence trait for query purpose.
+/// Statefull custom equivalence trait for query purpose.
 pub trait QueryEquivalentor<Q: ?Sized>: Equivalentor {
   /// Compare `a` to `b` and return `true` if they are equal.
   fn query_equivalent(&self, a: &Self::Type, b: &Q) -> bool;
 }
 
-/// Custom ordering trait.
+/// Statefull custom ordering trait.
 pub trait Comparator: Equivalentor {
   /// Compare `a` to `b` and return their ordering.
   fn compare(&self, a: &Self::Type, b: &Self::Type) -> cmp::Ordering;
 }
 
-/// Custom ordering trait.
-pub trait TypeRefComparator<'a>: Comparator + TypeRefEquivalentor<'a>
+/// Statefull custom ordering trait.
+pub trait TypeRefComparator<'a>: TypeRefEquivalentor<'a>
 where
   Self::Type: Type,
 {
@@ -67,7 +74,7 @@ where
   ) -> cmp::Ordering;
 }
 
-/// Custom ordering trait for querying purpose.
+/// Statefull custom ordering trait for querying purpose.
 pub trait TypeRefQueryComparator<'a, Q: ?Sized>:
   TypeRefComparator<'a> + TypeRefQueryEquivalentor<'a, Q>
 where
@@ -77,7 +84,7 @@ where
   fn query_compare_ref(&self, a: &<Self::Type as Type>::Ref<'a>, b: &Q) -> cmp::Ordering;
 }
 
-/// Custom ordering trait for querying purpose.
+/// Statefull custom ordering trait for querying purpose.
 pub trait QueryComparator<Q: ?Sized>: Comparator + QueryEquivalentor<Q> {
   /// Compare `a` to `b` and return their ordering.
   fn query_compare(&self, a: &Self::Type, b: &Q) -> cmp::Ordering;
@@ -264,7 +271,7 @@ const _: () = {
     };
   }
 
-  impl_traits!(std::sync::Arc<C>, std::rc::Rc<C>, std::boxed::Box<C>);
+  impl_traits!(std::sync::Arc<C>, std::rc::Rc<C>);
 
   #[cfg(feature = "triomphe01")]
   impl_traits!(triomphe01::Arc<C>);
