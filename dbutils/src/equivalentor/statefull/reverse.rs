@@ -7,106 +7,104 @@ use super::{
   TypeRefEquivalentor, TypeRefQueryComparator, TypeRefQueryEquivalentor,
 };
 
-impl<C> Equivalentor for Reverse<C>
+impl<C, T> Equivalentor<T> for Reverse<C>
 where
-  C: Equivalentor,
+  C: Equivalentor<T>,
+  T: ?Sized,
 {
-  type Type = C::Type;
-
   #[inline]
-  fn equivalent(&self, a: &Self::Type, b: &Self::Type) -> bool {
+  fn equivalent(&self, a: &T, b: &T) -> bool {
     self.0.equivalent(a, b)
   }
 }
 
-impl<'a, C> TypeRefEquivalentor<'a> for Reverse<C>
+impl<'a, C, T> TypeRefEquivalentor<'a, T> for Reverse<C>
 where
-  C: TypeRefEquivalentor<'a>,
-  C::Type: Type,
+  C: TypeRefEquivalentor<'a, T>,
+  T: Type + ?Sized,
 {
   #[inline]
-  fn equivalent_ref(&self, a: &Self::Type, b: &<Self::Type as Type>::Ref<'a>) -> bool {
+  fn equivalent_ref(&self, a: &T, b: &T::Ref<'a>) -> bool {
     self.0.equivalent_ref(a, b)
   }
 
   #[inline]
-  fn equivalent_refs(
-    &self,
-    a: &<Self::Type as Type>::Ref<'a>,
-    b: &<Self::Type as Type>::Ref<'a>,
-  ) -> bool {
+  fn equivalent_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
     self.0.equivalent_refs(a, b)
   }
 }
 
-impl<C, Q> QueryEquivalentor<Q> for Reverse<C>
+impl<C, T, Q> QueryEquivalentor<T, Q> for Reverse<C>
 where
-  C: QueryEquivalentor<Q>,
+  C: QueryEquivalentor<T, Q>,
+  T: ?Sized,
+  Q: ?Sized,
 {
   #[inline]
-  fn query_equivalent(&self, a: &Self::Type, b: &Q) -> bool {
+  fn query_equivalent(&self, a: &T, b: &Q) -> bool {
     self.0.query_equivalent(a, b)
   }
 }
 
-impl<'a, C, Q> TypeRefQueryEquivalentor<'a, Q> for Reverse<C>
+impl<'a, C, T, Q> TypeRefQueryEquivalentor<'a, T, Q> for Reverse<C>
 where
-  C: TypeRefQueryEquivalentor<'a, Q>,
-  C::Type: Type,
+  C: TypeRefQueryEquivalentor<'a, T, Q>,
+  T: Type + ?Sized,
+  Q: ?Sized,
 {
   #[inline]
-  fn query_equivalent_ref(&self, a: &<Self::Type as Type>::Ref<'a>, b: &Q) -> bool {
+  fn query_equivalent_ref(&self, a: &T::Ref<'a>, b: &Q) -> bool {
     self.0.query_equivalent_ref(a, b)
   }
 }
 
-impl<C> Comparator for Reverse<C>
+impl<C, T> Comparator<T> for Reverse<C>
 where
-  C: Comparator,
+  C: Comparator<T>,
+  T: ?Sized,
 {
   #[inline]
-  fn compare(&self, a: &Self::Type, b: &Self::Type) -> cmp::Ordering {
+  fn compare(&self, a: &T, b: &T) -> cmp::Ordering {
     self.0.compare(a, b).reverse()
   }
 }
 
-impl<'a, C> TypeRefComparator<'a> for Reverse<C>
+impl<'a, C, T> TypeRefComparator<'a, T> for Reverse<C>
 where
-  C: TypeRefComparator<'a>,
-  C::Type: Type,
+  C: TypeRefComparator<'a, T>,
+  T: Type + ?Sized,
 {
   #[inline]
-  fn compare_ref(&self, a: &Self::Type, b: &<Self::Type as Type>::Ref<'a>) -> cmp::Ordering {
+  fn compare_ref(&self, a: &T, b: &T::Ref<'a>) -> cmp::Ordering {
     self.0.compare_ref(a, b).reverse()
   }
 
   #[inline]
-  fn compare_refs(
-    &self,
-    a: &<Self::Type as Type>::Ref<'a>,
-    b: &<Self::Type as Type>::Ref<'a>,
-  ) -> cmp::Ordering {
+  fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
     self.0.compare_refs(a, b).reverse()
   }
 }
 
-impl<C, Q> QueryComparator<Q> for Reverse<C>
+impl<C, T, Q> QueryComparator<T, Q> for Reverse<C>
 where
-  C: QueryComparator<Q>,
+  C: QueryComparator<T, Q>,
+  T: ?Sized,
+  Q: ?Sized,
 {
   #[inline]
-  fn query_compare(&self, a: &Self::Type, b: &Q) -> cmp::Ordering {
+  fn query_compare(&self, a: &T, b: &Q) -> cmp::Ordering {
     self.0.query_compare(a, b).reverse()
   }
 }
 
-impl<'a, C, Q> TypeRefQueryComparator<'a, Q> for Reverse<C>
+impl<'a, C, T, Q> TypeRefQueryComparator<'a, T, Q> for Reverse<C>
 where
-  C: TypeRefQueryComparator<'a, Q>,
-  C::Type: Type,
+  C: TypeRefQueryComparator<'a, T, Q>,
+  T: Type + ?Sized,
+  Q: ?Sized,
 {
   #[inline]
-  fn query_compare_ref(&self, a: &<Self::Type as Type>::Ref<'a>, b: &Q) -> cmp::Ordering {
+  fn query_compare_ref(&self, a: &T::Ref<'a>, b: &Q) -> cmp::Ordering {
     self.0.query_compare_ref(a, b).reverse()
   }
 }

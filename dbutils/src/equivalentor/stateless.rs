@@ -8,85 +8,100 @@ use crate::types::Type;
 /// Stateless equivalence trait.
 ///
 /// Comparing to [`Equivalentor`](super::Equivalentor), `StaticEquivalentor` is not object-safe, but it does not to create a new object when comparing.
-pub trait StaticEquivalentor {
-  /// The type
-  type Type: ?Sized;
-
+pub trait StaticEquivalentor<T>
+where
+  T: ?Sized,
+{
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn equivalent(a: &Self::Type, b: &Self::Type) -> bool;
+  fn equivalent(a: &T, b: &T) -> bool;
 }
 
 /// Stateless equivalence trait for query purpose.
-pub trait StaticQueryEquivalentor<Q: ?Sized>: StaticEquivalentor {
+pub trait StaticQueryEquivalentor<T, Q>: StaticEquivalentor<T>
+where
+  T: ?Sized,
+  Q: ?Sized,
+{
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn query_equivalent(a: &Self::Type, b: &Q) -> bool;
+  fn query_equivalent(a: &T, b: &Q) -> bool;
 }
 
 /// Stateless equivalence trait
-pub trait StaticTypeRefEquivalentor<'a>: StaticEquivalentor
+pub trait StaticTypeRefEquivalentor<'a, T>: StaticEquivalentor<T>
 where
-  Self::Type: Type,
+  T: Type + ?Sized,
 {
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn equivalent_ref(a: &Self::Type, b: &<Self::Type as Type>::Ref<'a>) -> bool;
+  fn equivalent_ref(a: &T, b: &T::Ref<'a>) -> bool;
 
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn equivalent_refs(a: &<Self::Type as Type>::Ref<'a>, b: &<Self::Type as Type>::Ref<'a>) -> bool;
+  fn equivalent_refs(a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool;
 }
 
 /// Stateless equivalence trait for query purpose.
-pub trait StaticTypeRefQueryEquivalentor<'a, Q: ?Sized>: StaticTypeRefEquivalentor<'a>
+pub trait StaticTypeRefQueryEquivalentor<'a, T, Q>: StaticTypeRefEquivalentor<'a, T>
 where
-  Self::Type: Type,
+  T: Type + ?Sized,
+  Q: ?Sized,
 {
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn query_equivalent_ref(a: &<Self::Type as Type>::Ref<'a>, b: &Q) -> bool;
+  fn query_equivalent_ref(a: &T::Ref<'a>, b: &Q) -> bool;
 }
 
 /// Stateless ordering trait.
 ///
 /// Comparing to [`Comparator`](super::Comparator), `StaticComparator` is not object-safe, but it does not to create a new object when comparing.
-pub trait StaticComparator: StaticEquivalentor {
+pub trait StaticComparator<T>: StaticEquivalentor<T>
+where
+  T: ?Sized,
+{
   /// Compare `a` to `b` and return their ordering.
-  fn compare(a: &Self::Type, b: &Self::Type) -> cmp::Ordering;
+  fn compare(a: &T, b: &T) -> cmp::Ordering;
 }
 
 /// Stateless ordering trait for query purpose.
-pub trait StaticQueryComparator<Q: ?Sized>: StaticComparator + StaticQueryEquivalentor<Q> {
+pub trait StaticQueryComparator<T, Q>: StaticComparator<T> + StaticQueryEquivalentor<T, Q>
+where
+  T: ?Sized,
+  Q: ?Sized,
+{
   /// Compare `a` to `b` and return their ordering.
-  fn query_compare(a: &Self::Type, b: &Q) -> cmp::Ordering;
+  fn query_compare(a: &T, b: &Q) -> cmp::Ordering;
 }
 
 /// Stateless ordering trait.
-pub trait StaticTypeRefComparator<'a>: StaticComparator + StaticTypeRefEquivalentor<'a>
+pub trait StaticTypeRefComparator<'a, T>:
+  StaticComparator<T> + StaticTypeRefEquivalentor<'a, T>
 where
-  Self::Type: Type,
+  T: Type + ?Sized,
 {
   /// Compare `a` to `b` and return their ordering.
-  fn compare_ref(a: &Self::Type, b: &<Self::Type as Type>::Ref<'a>) -> cmp::Ordering;
+  fn compare_ref(a: &T, b: &T::Ref<'a>) -> cmp::Ordering;
 
   /// Compare `a` to `b` and return their ordering.
-  fn compare_refs(
-    a: &<Self::Type as Type>::Ref<'a>,
-    b: &<Self::Type as Type>::Ref<'a>,
-  ) -> cmp::Ordering;
+  fn compare_refs(a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering;
 }
 
 /// Stateless custom ordering trait for query purpose.
-pub trait StaticTypeRefQueryComparator<'a, Q: ?Sized>:
-  StaticTypeRefComparator<'a> + StaticTypeRefQueryEquivalentor<'a, Q>
+pub trait StaticTypeRefQueryComparator<'a, T, Q>:
+  StaticTypeRefComparator<'a, T> + StaticTypeRefQueryEquivalentor<'a, T, Q>
 where
-  Self::Type: Type,
+  T: Type + ?Sized,
+  Q: ?Sized,
 {
   /// Compare `a` to `b` and return their ordering.
-  fn query_compare_ref(a: &<Self::Type as Type>::Ref<'a>, b: &Q) -> cmp::Ordering;
+  fn query_compare_ref(a: &T::Ref<'a>, b: &Q) -> cmp::Ordering;
 }
 
 /// Stateless `StaticQueryRangeComparator` is implemented as an extention to `StaticComparator` to
 /// allow for comparison of items with range bounds.
-pub trait StaticQueryRangeComparator<Q: ?Sized>: StaticQueryComparator<Q> {
+pub trait StaticQueryRangeComparator<T, Q>: StaticQueryComparator<T, Q>
+where
+  T: ?Sized,
+  Q: ?Sized,
+{
   /// Returns `true` if `item` is contained in the range.
-  fn compare_contains<R>(range: &R, item: &Self::Type) -> bool
+  fn compare_contains<R>(range: &R, item: &T) -> bool
   where
     R: ?Sized + RangeBounds<Q>,
   {
@@ -106,22 +121,24 @@ pub trait StaticQueryRangeComparator<Q: ?Sized>: StaticQueryComparator<Q> {
   }
 }
 
-impl<Q, C> StaticQueryRangeComparator<Q> for C
+impl<T, Q, C> StaticQueryRangeComparator<T, Q> for C
 where
-  C: StaticQueryComparator<Q>,
+  C: StaticQueryComparator<T, Q>,
+  T: ?Sized,
   Q: ?Sized,
 {
 }
 
 /// Stateless `StaticTypeRefQueryRangeComparator` is implemented as an extention to `StaticTypeRefQueryComparator` to
 /// allow for comparison of items with range bounds.
-pub trait StaticTypeRefQueryRangeComparator<'a, Q: ?Sized>:
-  StaticTypeRefQueryComparator<'a, Q>
+pub trait StaticTypeRefQueryRangeComparator<'a, T, Q>:
+  StaticTypeRefQueryComparator<'a, T, Q>
 where
-  Self::Type: Type,
+  T: Type + ?Sized,
+  Q: ?Sized,
 {
   /// Returns `true` if `item` is contained in the range.
-  fn query_compare_contains<R>(&self, range: &R, item: &<Self::Type as Type>::Ref<'a>) -> bool
+  fn query_compare_contains<R>(&self, range: &R, item: &T::Ref<'a>) -> bool
   where
     R: ?Sized + RangeBounds<Q>,
   {
@@ -141,9 +158,10 @@ where
   }
 }
 
-impl<'a, Q: ?Sized, C> StaticTypeRefQueryRangeComparator<'a, Q> for C
+impl<'a, T, Q, C> StaticTypeRefQueryRangeComparator<'a, T, Q> for C
 where
-  C: StaticTypeRefQueryComparator<'a, Q>,
-  C::Type: Type,
+  C: StaticTypeRefQueryComparator<'a, T, Q>,
+  Q: ?Sized,
+  T: Type + ?Sized,
 {
 }

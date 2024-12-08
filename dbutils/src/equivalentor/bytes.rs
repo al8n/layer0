@@ -137,28 +137,28 @@ where
   }
 }
 
-impl BytesEquivalentor for super::Ascend<[u8]> {
+impl BytesEquivalentor for super::Ascend {
   #[inline]
   fn equivalent(&self, a: &[u8], b: &[u8]) -> bool {
     a == b
   }
 }
 
-impl BytesComparator for super::Ascend<[u8]> {
+impl BytesComparator for super::Ascend {
   #[inline]
   fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
     a.cmp(b)
   }
 }
 
-impl BytesEquivalentor for super::Descend<[u8]> {
+impl BytesEquivalentor for super::Descend {
   #[inline]
   fn equivalent(&self, a: &[u8], b: &[u8]) -> bool {
     a == b
   }
 }
 
-impl BytesComparator for super::Descend<[u8]> {
+impl BytesComparator for super::Descend {
   #[inline]
   fn compare(&self, a: &[u8], b: &[u8]) -> cmp::Ordering {
     b.cmp(a)
