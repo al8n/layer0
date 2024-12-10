@@ -93,6 +93,118 @@ where
   fn query_compare_ref(a: &T::Ref<'a>, b: &Q) -> cmp::Ordering;
 }
 
+/// `StaticRangeComparator` is implemented as an extention to [`StaticComparator`] to
+/// allow for comparison of items with range bounds.
+pub trait StaticRangeComparator<T>: StaticComparator<T>
+where
+  T: ?Sized,
+{
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn contains<R>(range: &R, item: &T) -> bool
+  where
+    R: ?Sized + RangeBounds<T>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => Self::compare(item, start) != Ordering::Less,
+      Bound::Excluded(start) => Self::compare(item, start) == Ordering::Greater,
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => Self::compare(item, end) != Ordering::Greater,
+      Bound::Excluded(end) => Self::compare(item, end) == Ordering::Less,
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+}
+
+impl<T, C> StaticRangeComparator<T> for C
+where
+  C: StaticComparator<T>,
+  T: ?Sized,
+{
+}
+
+/// `StaticTypeRefRangeComparator` is implemented as an extention to [`StaticTypeRefComparator`] to
+/// allow for comparison of items with range bounds.
+pub trait StaticTypeRefRangeComparator<'a, T>: StaticTypeRefComparator<'a, T>
+where
+  T: Type + ?Sized,
+{
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn contains<R>(range: &R, item: &T) -> bool
+  where
+    R: ?Sized + RangeBounds<T::Ref<'a>>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => Self::compare_ref(item, start) != Ordering::Less,
+      Bound::Excluded(start) => Self::compare_ref(item, start) == Ordering::Greater,
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => Self::compare_ref(item, end) != Ordering::Greater,
+      Bound::Excluded(end) => Self::compare_ref(item, end) == Ordering::Less,
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn refs_contains<R>(range: &R, item: &T::Ref<'a>) -> bool
+  where
+    R: ?Sized + RangeBounds<T::Ref<'a>>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => Self::compare_refs(item, start) != Ordering::Less,
+      Bound::Excluded(start) => Self::compare_refs(item, start) == Ordering::Greater,
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => Self::compare_refs(item, end) != Ordering::Greater,
+      Bound::Excluded(end) => Self::compare_refs(item, end) == Ordering::Less,
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn ref_contains<R>(range: &R, item: &T::Ref<'a>) -> bool
+  where
+    R: ?Sized + RangeBounds<T>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => Self::compare_ref(start, item).is_le(),
+      Bound::Excluded(start) => Self::compare_ref(start, item).is_lt(),
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => Self::compare_ref(end, item).is_ge(),
+      Bound::Excluded(end) => Self::compare_ref(end, item).is_gt(),
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+}
+
+impl<'a, T, C> StaticTypeRefRangeComparator<'a, T> for C
+where
+  C: StaticTypeRefComparator<'a, T>,
+  T: Type + ?Sized,
+{
+}
+
 /// Stateless `StaticQueryRangeComparator` is implemented as an extention to `StaticComparator` to
 /// allow for comparison of items with range bounds.
 pub trait StaticQueryRangeComparator<T, Q>: StaticQueryComparator<T, Q>

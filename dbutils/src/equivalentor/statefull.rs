@@ -51,6 +51,41 @@ pub trait Comparator<T: ?Sized>: Equivalentor<T> {
   fn compare(&self, a: &T, b: &T) -> cmp::Ordering;
 }
 
+/// `RangeComparator` is implemented as an extention to [`Comparator`] to
+/// allow for comparison of items with range bounds.
+pub trait RangeComparator<T>: Comparator<T>
+where
+  T: ?Sized,
+{
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn contains<R>(&self, range: &R, item: &T) -> bool
+  where
+    R: ?Sized + RangeBounds<T>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => self.compare(item, start) != Ordering::Less,
+      Bound::Excluded(start) => self.compare(item, start) == Ordering::Greater,
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => self.compare(item, end) != Ordering::Greater,
+      Bound::Excluded(end) => self.compare(item, end) == Ordering::Less,
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+}
+
+impl<T, C> RangeComparator<T> for C
+where
+  C: Comparator<T>,
+  T: ?Sized,
+{
+}
+
 /// Statefull custom ordering trait.
 pub trait TypeRefComparator<'a, T>: Comparator<T> + TypeRefEquivalentor<'a, T>
 where
@@ -61,6 +96,83 @@ where
 
   /// Compare `a` to `b` and return their ordering.
   fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering;
+}
+
+/// `TypeRefRangeComparator` is implemented as an extention to [`TypeRefComparator`] to
+/// allow for comparison of items with range bounds.
+pub trait TypeRefRangeComparator<'a, T>: TypeRefComparator<'a, T>
+where
+  T: Type + ?Sized,
+{
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn contains<R>(&self, range: &R, item: &T) -> bool
+  where
+    R: ?Sized + RangeBounds<T::Ref<'a>>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => self.compare_ref(item, start) != Ordering::Less,
+      Bound::Excluded(start) => self.compare_ref(item, start) == Ordering::Greater,
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => self.compare_ref(item, end) != Ordering::Greater,
+      Bound::Excluded(end) => self.compare_ref(item, end) == Ordering::Less,
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn refs_contains<R>(&self, range: &R, item: &T::Ref<'a>) -> bool
+  where
+    R: ?Sized + RangeBounds<T::Ref<'a>>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => self.compare_refs(item, start) != Ordering::Less,
+      Bound::Excluded(start) => self.compare_refs(item, start) == Ordering::Greater,
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => self.compare_refs(item, end) != Ordering::Greater,
+      Bound::Excluded(end) => self.compare_refs(item, end) == Ordering::Less,
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+
+  /// Returns `true` if `item` is contained in the range.
+  #[inline]
+  fn ref_contains<R>(&self, range: &R, item: &T::Ref<'a>) -> bool
+  where
+    R: ?Sized + RangeBounds<T>,
+  {
+    let start = match range.start_bound() {
+      Bound::Included(start) => self.compare_ref(start, item).is_le(),
+      Bound::Excluded(start) => self.compare_ref(start, item).is_lt(),
+      Bound::Unbounded => true,
+    };
+
+    let end = match range.end_bound() {
+      Bound::Included(end) => self.compare_ref(end, item).is_ge(),
+      Bound::Excluded(end) => self.compare_ref(end, item).is_gt(),
+      Bound::Unbounded => true,
+    };
+
+    start && end
+  }
+}
+
+impl<'a, T, C> TypeRefRangeComparator<'a, T> for C
+where
+  C: TypeRefComparator<'a, T>,
+  T: Type + ?Sized,
+{
 }
 
 /// Statefull custom ordering trait for querying purpose.
