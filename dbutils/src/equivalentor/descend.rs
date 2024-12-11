@@ -1,9 +1,11 @@
 use core::cmp;
 
 use cheap_clone::CheapClone;
-use equivalent::{Comparable, Equivalent};
 
-use crate::types::Type;
+use crate::{
+  equivalent::{Comparable, Equivalent},
+  types::Type,
+};
 
 use super::{
   Comparator, Equivalentor, QueryComparator, QueryEquivalentor, StaticComparator,

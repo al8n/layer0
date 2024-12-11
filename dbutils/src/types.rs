@@ -1,13 +1,9 @@
-use core::{
-  cmp::{self, Reverse},
-  ops::{Bound, RangeBounds},
-};
+use core::cmp::{self, Reverse};
 
 use either::Either;
-use equivalent::{Comparable, Equivalent};
 pub use impls::*;
 
-use crate::{buffer::VacantBuffer, equivalent::ComparableRangeBounds};
+use crate::{buffer::VacantBuffer, equivalent::*};
 
 mod impls;
 mod lazy_ref;
@@ -124,63 +120,6 @@ pub trait TypeRef<'a>: core::fmt::Debug + Copy + Sized {
   }
 }
 
-/// The key reference trait for comparing `K`.
-pub trait KeyRef<'a, K: ?Sized>: Ord + Comparable<K> {
-  /// Compares with a type `Q` which can be borrowed from [`K::Ref`](Type::Ref).
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>;
-
-  /// Returns `true` if the key is contained in the range.
-  fn contains<R, Q>(&self, range: R) -> bool
-  where
-    R: RangeBounds<Q>,
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    range.compare_contains(self)
-  }
-
-  /// Compares two binary formats of the `K` directly.
-  ///
-  /// ## Safety
-  /// - The `a` and `b` must be the same as the one returned by [`K::encode`](Type::encode).
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering;
-
-  /// Compares two binary formats of the `K` directly.
-  ///
-  /// ## Safety
-  /// - The `a` and `b` must be the same as the one returned by [`K::encode`](Type::encode).
-  #[inline]
-  unsafe fn equivalent_binary(a: &[u8], b: &[u8]) -> bool {
-    a == b
-  }
-
-  /// Returns `true` if the key is contained in the range.
-  ///
-  /// ## Safety
-  /// - The `key`, `start_bound` and `end_bound` must be the same as the one returned by [`K::encode`](Type::encode).
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    let start = match start_bound {
-      Bound::Included(start) => Self::compare_binary(key, start).is_ge(),
-      Bound::Excluded(start) => Self::compare_binary(key, start).is_gt(),
-      Bound::Unbounded => true,
-    };
-
-    let end = match end_bound {
-      Bound::Included(end) => Self::compare_binary(key, end).is_le(),
-      Bound::Excluded(end) => Self::compare_binary(key, end).is_lt(),
-      Bound::Unbounded => true,
-    };
-
-    // start <= self <= end
-    start && end
-  }
-}
-
 /// A wrapper around a generic type that can be used to construct for insertion.
 #[repr(transparent)]
 #[derive(Debug)]
@@ -215,7 +154,8 @@ where
 
 impl<'a, T: 'a> PartialEq for MaybeStructured<'a, T>
 where
-  T: ?Sized + PartialEq + Type + for<'b> Equivalent<T::Ref<'b>>,
+  T::Ref<'a>: Equivalent<T>,
+  T: ?Sized + PartialEq + Type,
 {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
@@ -224,18 +164,20 @@ where
       (Either::Right(val), Either::Right(other_val)) => val.eq(other_val),
       (Either::Left(val), Either::Right(other_val)) => {
         let ref_ = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(other_val) };
-        val.equivalent(&ref_)
+        ref_.equivalent(val)
       }
       (Either::Right(val), Either::Left(other_val)) => {
         let ref_ = unsafe { <T::Ref<'_> as TypeRef<'_>>::from_slice(val) };
-        other_val.equivalent(&ref_)
+        ref_.equivalent(other_val)
       }
     }
   }
 }
 
-impl<'a, T: 'a> Eq for MaybeStructured<'a, T> where
-  T: ?Sized + Eq + Type + for<'b> Equivalent<T::Ref<'b>>
+impl<'a, T: 'a> Eq for MaybeStructured<'a, T>
+where
+  T::Ref<'a>: Equivalent<T>,
+  T: ?Sized + Eq + Type,
 {
 }
 

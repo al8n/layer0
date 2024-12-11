@@ -1,6 +1,6 @@
 use core::{borrow::Borrow, cmp::Ordering};
 
-use ::equivalent::Equivalent;
+use crate::equivalent::*;
 
 use super::*;
 
@@ -165,97 +165,17 @@ impl Type for str {
   }
 }
 
-impl<'a, K> KeyRef<'a, K> for Str<'a>
-where
-  K: ?Sized + Type<Ref<'a> = Str<'a>>,
-  Str<'a>: Comparable<K>,
-{
+impl Equivalent<Str<'_>> for str {
   #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
+  fn equivalent(&self, key: &Str<'_>) -> bool {
+    self == key.0
   }
 }
 
-impl<'a, K> KeyRef<'a, K> for &'a str
-where
-  K: ?Sized + Type<Ref<'a> = &'a str>,
-  &'a str: Comparable<K>,
-{
+impl Comparable<Str<'_>> for str {
   #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
-  }
-}
-
-impl KeyRef<'_, str> for str {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
-  }
-}
-
-impl Equivalent<str> for Str<'_> {
-  #[inline]
-  fn equivalent(&self, key: &str) -> bool {
-    self.0 == key
-  }
-}
-
-impl Comparable<str> for Str<'_> {
-  #[inline]
-  fn compare(&self, key: &str) -> cmp::Ordering {
-    self.0.cmp(key)
+  fn compare(&self, key: &Str<'_>) -> cmp::Ordering {
+    self.cmp(key.0)
   }
 }
 

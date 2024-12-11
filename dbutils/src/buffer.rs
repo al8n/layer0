@@ -7,9 +7,8 @@ use core::{
   slice,
 };
 
-use equivalent::{Comparable, Equivalent};
-
 use crate::{
+  equivalent::{Comparable, Equivalent},
   error::InsufficientBuffer,
   types::{MaybeStructured, Type},
 };
@@ -625,23 +624,15 @@ impl BorrowMut<[u8]> for VacantBuffer<'_> {
   }
 }
 
-impl<Q> Equivalent<Q> for VacantBuffer<'_>
-where
-  [u8]: Borrow<Q>,
-  Q: ?Sized + Eq,
-{
-  fn equivalent(&self, key: &Q) -> bool {
-    self.as_ref().borrow().eq(key)
+impl Equivalent<VacantBuffer<'_>> for [u8] {
+  fn equivalent(&self, key: &VacantBuffer<'_>) -> bool {
+    self.eq(key)
   }
 }
 
-impl<Q> Comparable<Q> for VacantBuffer<'_>
-where
-  [u8]: Borrow<Q>,
-  Q: ?Sized + Ord,
-{
-  fn compare(&self, other: &Q) -> core::cmp::Ordering {
-    self.as_ref().borrow().compare(other)
+impl Comparable<VacantBuffer<'_>> for [u8] {
+  fn compare(&self, other: &VacantBuffer<'_>) -> core::cmp::Ordering {
+    self.cmp(other)
   }
 }
 

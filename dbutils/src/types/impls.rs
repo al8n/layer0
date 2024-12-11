@@ -128,25 +128,6 @@ macro_rules! impl_numbers {
   (@key $($ty:ident), +$(,)?) => {
     $(
       impl_type!($ty);
-
-      impl KeyRef<'_, $ty> for $ty {
-        #[inline]
-        fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-        where
-          Q: ?Sized + Ord + Comparable<$ty> {
-          Comparable::compare(a, self).reverse()
-        }
-
-        #[inline]
-        unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-          const SIZE: usize = core::mem::size_of::<$ty>();
-
-          let a = $ty::from_le_bytes(a[..SIZE].try_into().unwrap());
-          let b = $ty::from_le_bytes(b[..SIZE].try_into().unwrap());
-
-          a.cmp(&b)
-        }
-      }
     )*
   };
   ($($ty:ident), +$(,)?) => {
@@ -180,24 +161,6 @@ impl TypeRef<'_> for bool {
   }
 }
 
-impl KeyRef<'_, bool> for bool {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<bool>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    let a = bool::from_slice(a);
-    let b = bool::from_slice(b);
-
-    a.cmp(&b)
-  }
-}
-
 impl Type for char {
   type Ref<'a> = Self;
 
@@ -220,23 +183,5 @@ impl TypeRef<'_> for char {
   #[inline]
   unsafe fn from_slice(buf: &[u8]) -> Self {
     core::str::from_utf8_unchecked(buf).chars().next().unwrap()
-  }
-}
-
-impl KeyRef<'_, char> for char {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<char>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    let a = char::from_slice(a);
-    let b = char::from_slice(b);
-
-    a.cmp(&b)
   }
 }

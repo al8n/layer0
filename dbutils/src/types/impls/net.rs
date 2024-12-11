@@ -1,7 +1,6 @@
-use core::cmp;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
-use super::{Comparable, InsufficientBuffer, KeyRef, Type, TypeRef, VacantBuffer};
+use super::{InsufficientBuffer, Type, TypeRef, VacantBuffer};
 
 const SOCKET_V6_ENCODED_LEN: usize = 18;
 const SOCKET_V4_ENCODED_LEN: usize = 6;
@@ -32,25 +31,6 @@ impl TypeRef<'_> for Ipv4Addr {
   }
 }
 
-impl KeyRef<'_, Ipv4Addr> for Ipv4Addr {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-    unsafe {
-      let a = <Self as TypeRef>::from_slice(a);
-      let b = <Self as TypeRef>::from_slice(b);
-      a.cmp(&b)
-    }
-  }
-}
-
 impl Type for Ipv6Addr {
   type Ref<'a> = Self;
 
@@ -72,25 +52,6 @@ impl TypeRef<'_> for Ipv6Addr {
   unsafe fn from_slice(buf: &[u8]) -> Self {
     let octets = <[u8; IPV6_ENCODED_LEN]>::from_slice(&buf[..IPV6_ENCODED_LEN]);
     Ipv6Addr::from(octets)
-  }
-}
-
-impl KeyRef<'_, Ipv6Addr> for Ipv6Addr {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-    unsafe {
-      let a = <Self as TypeRef>::from_slice(a);
-      let b = <Self as TypeRef>::from_slice(b);
-      a.cmp(&b)
-    }
   }
 }
 
@@ -118,25 +79,6 @@ impl TypeRef<'_> for SocketAddrV4 {
     let octets = <[u8; 4]>::from_slice(&buf[..4]);
     let port = u16::from_le_bytes(buf[4..6].try_into().unwrap());
     SocketAddrV4::new(Ipv4Addr::from(octets), port)
-  }
-}
-
-impl KeyRef<'_, SocketAddrV4> for SocketAddrV4 {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-    unsafe {
-      let a = <Self as TypeRef>::from_slice(a);
-      let b = <Self as TypeRef>::from_slice(b);
-      a.cmp(&b)
-    }
   }
 }
 
@@ -168,24 +110,5 @@ impl TypeRef<'_> for SocketAddrV6 {
         .unwrap(),
     );
     SocketAddrV6::new(Ipv6Addr::from(octets), port, 0, 0)
-  }
-}
-
-impl KeyRef<'_, SocketAddrV6> for SocketAddrV6 {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-    unsafe {
-      let a = <Self as TypeRef>::from_slice(a);
-      let b = <Self as TypeRef>::from_slice(b);
-      a.cmp(&b)
-    }
   }
 }

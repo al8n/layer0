@@ -1,4 +1,4 @@
-use ::equivalent::*;
+use crate::equivalent::*;
 use core::{borrow::Borrow, cmp::Ordering};
 
 use super::*;
@@ -108,62 +108,6 @@ impl core::ops::Deref for SliceRef<'_> {
   }
 }
 
-impl<'a, K> KeyRef<'a, K> for SliceRef<'a>
-where
-  K: ?Sized + Type<Ref<'a> = SliceRef<'a>>,
-  SliceRef<'a>: Comparable<K>,
-{
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
-  }
-}
-
-impl<'a, K> KeyRef<'a, K> for &'a [u8]
-where
-  K: ?Sized + Type<Ref<'a> = SliceRef<'a>>,
-  &'a [u8]: Comparable<K>,
-{
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
-  }
-}
-
 impl Type for [u8] {
   type Ref<'a> = SliceRef<'a>;
 
@@ -185,41 +129,17 @@ impl Type for [u8] {
   }
 }
 
-impl KeyRef<'_, [u8]> for [u8] {
+impl Equivalent<SliceRef<'_>> for [u8] {
   #[inline]
-  fn compare<Q>(&self, a: &Q) -> cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<Self>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
+  fn equivalent(&self, key: &SliceRef<'_>) -> bool {
+    self == key.0
   }
 }
 
-impl Equivalent<[u8]> for SliceRef<'_> {
+impl Comparable<SliceRef<'_>> for [u8] {
   #[inline]
-  fn equivalent(&self, key: &[u8]) -> bool {
-    self.0 == key
-  }
-}
-
-impl Comparable<[u8]> for SliceRef<'_> {
-  #[inline]
-  fn compare(&self, key: &[u8]) -> cmp::Ordering {
-    self.0.cmp(key)
+  fn compare(&self, key: &SliceRef<'_>) -> cmp::Ordering {
+    self.cmp(key.0)
   }
 }
 
@@ -250,30 +170,6 @@ impl<const N: usize> TypeRef<'_> for [u8; N] {
     let mut this = [0; N];
     this.copy_from_slice(src);
     this
-  }
-}
-
-impl<const N: usize> KeyRef<'_, [u8; N]> for [u8; N] {
-  #[inline]
-  fn compare<Q>(&self, a: &Q) -> core::cmp::Ordering
-  where
-    Q: ?Sized + Ord + Comparable<[u8; N]>,
-  {
-    Comparable::compare(a, self).reverse()
-  }
-
-  #[inline]
-  unsafe fn compare_binary(a: &[u8], b: &[u8]) -> core::cmp::Ordering {
-    a.cmp(b)
-  }
-
-  #[inline]
-  unsafe fn contains_binary(
-    start_bound: Bound<&[u8]>,
-    end_bound: Bound<&[u8]>,
-    key: &[u8],
-  ) -> bool {
-    <(Bound<&[u8]>, Bound<&[u8]>) as RangeBounds<[u8]>>::contains(&(start_bound, end_bound), key)
   }
 }
 
