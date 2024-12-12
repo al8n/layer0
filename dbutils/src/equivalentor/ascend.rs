@@ -38,42 +38,42 @@ where
   }
 }
 
-impl<'a, A> StaticTypeRefEquivalentor<'a, A> for Ascend
+impl<A> StaticTypeRefEquivalentor<A> for Ascend
 where
-  A: ?Sized + Eq + Type,
-  A::Ref<'a>: Equivalent<A> + Eq,
+  A: ?Sized + Eq + Type + for<'a> Equivalent<A::Ref<'a>>,
+  for<'a> A::Ref<'a>: Eq,
 {
   #[inline]
-  fn equivalent_ref(a: &A, b: &<A as Type>::Ref<'a>) -> bool {
-    b.equivalent(a)
+  fn equivalent_ref(a: &A, b: &A::Ref<'_>) -> bool {
+    a.equivalent(b)
   }
 
   #[inline]
-  fn equivalent_refs(a: &<A as Type>::Ref<'a>, b: &<A as Type>::Ref<'a>) -> bool {
+  fn equivalent_refs<'b>(a: &A::Ref<'b>, b: &A::Ref<'b>) -> bool {
     a == b
   }
 }
 
 impl<A, Q> StaticQueryEquivalentor<A, Q> for Ascend
 where
-  A: Eq + ?Sized,
-  Q: ?Sized + Equivalent<A>,
+  A: Eq + Equivalent<Q> + ?Sized,
+  Q: ?Sized,
 {
   #[inline]
   fn query_equivalent(a: &A, b: &Q) -> bool {
-    b.equivalent(a)
+    a.equivalent(b)
   }
 }
 
-impl<'a, A, Q> StaticTypeRefQueryEquivalentor<'a, A, Q> for Ascend
+impl<A, Q> StaticTypeRefQueryEquivalentor<A, Q> for Ascend
 where
-  A: ?Sized + Eq + Type,
-  A::Ref<'a>: Equivalent<A> + Eq,
-  Q: ?Sized + Equivalent<A::Ref<'a>>,
+  A: ?Sized + Eq + Type + for<'a> Equivalent<A::Ref<'a>>,
+  for<'a> A::Ref<'a>: Equivalent<Q> + Eq,
+  Q: ?Sized,
 {
   #[inline]
-  fn query_equivalent_ref(a: &<A as Type>::Ref<'a>, b: &Q) -> bool {
-    b.equivalent(a)
+  fn query_equivalent_ref(a: &A::Ref<'_>, b: &Q) -> bool {
+    a.equivalent(b)
   }
 }
 
@@ -87,42 +87,42 @@ where
   }
 }
 
-impl<'a, A> StaticTypeRefComparator<'a, A> for Ascend
+impl<A> StaticTypeRefComparator<A> for Ascend
 where
-  A: ?Sized + Ord + Type,
-  A::Ref<'a>: Comparable<A> + Ord,
+  A: ?Sized + Ord + Type + for<'a> Comparable<A::Ref<'a>>,
+  for<'a> A::Ref<'a>: Ord,
 {
   #[inline]
-  fn compare_ref(a: &A, b: &<A as Type>::Ref<'a>) -> cmp::Ordering {
-    b.compare(a).reverse()
+  fn compare_ref(a: &A, b: &A::Ref<'_>) -> cmp::Ordering {
+    a.compare(b)
   }
 
   #[inline]
-  fn compare_refs(a: &<A as Type>::Ref<'a>, b: &<A as Type>::Ref<'a>) -> cmp::Ordering {
+  fn compare_refs<'a>(a: &A::Ref<'a>, b: &A::Ref<'a>) -> cmp::Ordering {
     a.cmp(b)
   }
 }
 
 impl<A, Q> StaticQueryComparator<A, Q> for Ascend
 where
-  A: ?Sized + Ord,
-  Q: ?Sized + Comparable<A>,
+  A: ?Sized + Ord + Comparable<Q>,
+  Q: ?Sized,
 {
   #[inline]
   fn query_compare(a: &A, b: &Q) -> cmp::Ordering {
-    b.compare(a).reverse()
+    a.compare(b)
   }
 }
 
-impl<'a, A, Q> StaticTypeRefQueryComparator<'a, A, Q> for Ascend
+impl<A, Q> StaticTypeRefQueryComparator<A, Q> for Ascend
 where
-  A: ?Sized + Ord + Type,
-  A::Ref<'a>: Comparable<A> + Ord,
-  Q: ?Sized + Comparable<A::Ref<'a>>,
+  A: ?Sized + Ord + Type + for<'a> Comparable<A::Ref<'a>>,
+  for<'a> A::Ref<'a>: Comparable<Q> + Ord,
+  Q: ?Sized,
 {
   #[inline]
-  fn query_compare_ref(a: &<A as Type>::Ref<'a>, b: &Q) -> cmp::Ordering {
-    b.compare(a).reverse()
+  fn query_compare_ref(a: &A::Ref<'_>, b: &Q) -> cmp::Ordering {
+    a.compare(b)
   }
 }
 
@@ -149,31 +149,31 @@ where
   }
 }
 
-impl<'a, A> TypeRefEquivalentor<'a, A> for Ascend
+impl<A> TypeRefEquivalentor<A> for Ascend
 where
-  Ascend: StaticTypeRefEquivalentor<'a, A>,
+  Ascend: StaticTypeRefEquivalentor<A>,
   A: Type + ?Sized,
 {
   #[inline]
-  fn equivalent_ref(&self, a: &A, b: &<A as Type>::Ref<'a>) -> bool {
-    <Ascend as StaticTypeRefEquivalentor<'a, A>>::equivalent_ref(a, b)
+  fn equivalent_ref(&self, a: &A, b: &A::Ref<'_>) -> bool {
+    <Ascend as StaticTypeRefEquivalentor<A>>::equivalent_ref(a, b)
   }
 
   #[inline]
-  fn equivalent_refs(&self, a: &<A as Type>::Ref<'a>, b: &<A as Type>::Ref<'a>) -> bool {
-    <Ascend as StaticTypeRefEquivalentor<'a, A>>::equivalent_refs(a, b)
+  fn equivalent_refs<'a>(&self, a: &A::Ref<'a>, b: &A::Ref<'a>) -> bool {
+    <Ascend as StaticTypeRefEquivalentor<A>>::equivalent_refs(a, b)
   }
 }
 
-impl<'a, A, Q> TypeRefQueryEquivalentor<'a, A, Q> for Ascend
+impl<A, Q> TypeRefQueryEquivalentor<A, Q> for Ascend
 where
   Q: ?Sized,
-  Ascend: StaticTypeRefQueryEquivalentor<'a, A, Q>,
+  Ascend: StaticTypeRefQueryEquivalentor<A, Q>,
   A: Type + ?Sized,
 {
   #[inline]
-  fn query_equivalent_ref(&self, a: &<A as Type>::Ref<'a>, b: &Q) -> bool {
-    <Ascend as StaticTypeRefQueryEquivalentor<'a, A, Q>>::query_equivalent_ref(a, b)
+  fn query_equivalent_ref(&self, a: &A::Ref<'_>, b: &Q) -> bool {
+    <Ascend as StaticTypeRefQueryEquivalentor<A, Q>>::query_equivalent_ref(a, b)
   }
 }
 
@@ -200,31 +200,31 @@ where
   }
 }
 
-impl<'a, A> TypeRefComparator<'a, A> for Ascend
+impl<A> TypeRefComparator<A> for Ascend
 where
   A: Type,
   A: ?Sized,
-  Ascend: StaticTypeRefComparator<'a, A>,
+  Ascend: StaticTypeRefComparator<A>,
 {
   #[inline]
-  fn compare_ref(&self, a: &A, b: &<A as Type>::Ref<'a>) -> cmp::Ordering {
-    <Ascend as StaticTypeRefComparator<'a, A>>::compare_ref(a, b)
+  fn compare_ref(&self, a: &A, b: &A::Ref<'_>) -> cmp::Ordering {
+    <Ascend as StaticTypeRefComparator<A>>::compare_ref(a, b)
   }
 
   #[inline]
-  fn compare_refs(&self, a: &<A as Type>::Ref<'a>, b: &<A as Type>::Ref<'a>) -> cmp::Ordering {
-    <Ascend as StaticTypeRefComparator<'a, A>>::compare_refs(a, b)
+  fn compare_refs<'a>(&self, a: &A::Ref<'a>, b: &A::Ref<'a>) -> cmp::Ordering {
+    <Ascend as StaticTypeRefComparator<A>>::compare_refs(a, b)
   }
 }
 
-impl<'a, Q, A> TypeRefQueryComparator<'a, A, Q> for Ascend
+impl<Q, A> TypeRefQueryComparator<A, Q> for Ascend
 where
   Q: ?Sized,
-  Ascend: StaticTypeRefQueryComparator<'a, A, Q>,
+  Ascend: StaticTypeRefQueryComparator<A, Q>,
   A: Type + ?Sized,
 {
   #[inline]
-  fn query_compare_ref(&self, a: &<A as Type>::Ref<'a>, b: &Q) -> cmp::Ordering {
-    <Ascend as StaticTypeRefQueryComparator<'a, A, Q>>::query_compare_ref(a, b)
+  fn query_compare_ref(&self, a: &A::Ref<'_>, b: &Q) -> cmp::Ordering {
+    <Ascend as StaticTypeRefQueryComparator<A, Q>>::query_compare_ref(a, b)
   }
 }

@@ -14,25 +14,25 @@ pub trait Equivalentor<T: ?Sized> {
 }
 
 /// Statefull custom equivalence trait.
-pub trait TypeRefEquivalentor<'a, T>: Equivalentor<T>
+pub trait TypeRefEquivalentor<T>: Equivalentor<T>
 where
   T: Type + ?Sized,
 {
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn equivalent_ref(&self, a: &T, b: &T::Ref<'a>) -> bool;
+  fn equivalent_ref(&self, a: &T, b: &T::Ref<'_>) -> bool;
 
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn equivalent_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool;
+  fn equivalent_refs<'a>(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool;
 }
 
 /// Statefull custom equivalence trait for query purpose.
-pub trait TypeRefQueryEquivalentor<'a, T, Q>: TypeRefEquivalentor<'a, T>
+pub trait TypeRefQueryEquivalentor<T, Q>: TypeRefEquivalentor<T>
 where
   Q: ?Sized,
   T: Type + ?Sized,
 {
   /// Compare `a` to `b` and return `true` if they are equal.
-  fn query_equivalent_ref(&self, a: &T::Ref<'a>, b: &Q) -> bool;
+  fn query_equivalent_ref(&self, a: &T::Ref<'_>, b: &Q) -> bool;
 }
 
 /// Statefull custom equivalence trait for query purpose.
@@ -87,26 +87,26 @@ where
 }
 
 /// Statefull custom ordering trait.
-pub trait TypeRefComparator<'a, T>: Comparator<T> + TypeRefEquivalentor<'a, T>
+pub trait TypeRefComparator<T>: Comparator<T> + TypeRefEquivalentor<T>
 where
   T: Type + ?Sized,
 {
   /// Compare `a` to `b` and return their ordering.
-  fn compare_ref(&self, a: &T, b: &T::Ref<'a>) -> cmp::Ordering;
+  fn compare_ref(&self, a: &T, b: &T::Ref<'_>) -> cmp::Ordering;
 
   /// Compare `a` to `b` and return their ordering.
-  fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering;
+  fn compare_refs<'a>(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering;
 }
 
 /// `TypeRefRangeComparator` is implemented as an extention to [`TypeRefComparator`] to
 /// allow for comparison of items with range bounds.
-pub trait TypeRefRangeComparator<'a, T>: TypeRefComparator<'a, T>
+pub trait TypeRefRangeComparator<T>: TypeRefComparator<T>
 where
   T: Type + ?Sized,
 {
   /// Returns `true` if `item` is contained in the range.
   #[inline]
-  fn contains<R>(&self, range: &R, item: &T) -> bool
+  fn contains<'a, R>(&self, range: &R, item: &T) -> bool
   where
     R: ?Sized + RangeBounds<T::Ref<'a>>,
   {
@@ -127,7 +127,7 @@ where
 
   /// Returns `true` if `item` is contained in the range.
   #[inline]
-  fn refs_contains<R>(&self, range: &R, item: &T::Ref<'a>) -> bool
+  fn refs_contains<'a, R>(&self, range: &R, item: &T::Ref<'a>) -> bool
   where
     R: ?Sized + RangeBounds<T::Ref<'a>>,
   {
@@ -148,7 +148,7 @@ where
 
   /// Returns `true` if `item` is contained in the range.
   #[inline]
-  fn ref_contains<R>(&self, range: &R, item: &T::Ref<'a>) -> bool
+  fn ref_contains<R>(&self, range: &R, item: &T::Ref<'_>) -> bool
   where
     R: ?Sized + RangeBounds<T>,
   {
@@ -168,22 +168,22 @@ where
   }
 }
 
-impl<'a, T, C> TypeRefRangeComparator<'a, T> for C
+impl<T, C> TypeRefRangeComparator<T> for C
 where
-  C: TypeRefComparator<'a, T>,
+  C: TypeRefComparator<T>,
   T: Type + ?Sized,
 {
 }
 
 /// Statefull custom ordering trait for querying purpose.
-pub trait TypeRefQueryComparator<'a, T, Q>:
-  TypeRefComparator<'a, T> + TypeRefQueryEquivalentor<'a, T, Q>
+pub trait TypeRefQueryComparator<T, Q>:
+  TypeRefComparator<T> + TypeRefQueryEquivalentor<T, Q>
 where
   T: Type + ?Sized,
   Q: ?Sized,
 {
   /// Compare `a` to `b` and return their ordering.
-  fn query_compare_ref(&self, a: &T::Ref<'a>, b: &Q) -> cmp::Ordering;
+  fn query_compare_ref(&self, a: &T::Ref<'_>, b: &Q) -> cmp::Ordering;
 }
 
 /// Statefull custom ordering trait for querying purpose.
@@ -198,14 +198,14 @@ where
 
 /// `TypeRefQueryRangeComparator` is implemented as an extention to [`TypeRefQueryComparator`] to
 /// allow for comparison of items with range bounds.
-pub trait TypeRefQueryRangeComparator<'a, T, Q>: TypeRefQueryComparator<'a, T, Q>
+pub trait TypeRefQueryRangeComparator<T, Q>: TypeRefQueryComparator<T, Q>
 where
   T: Type + ?Sized,
   Q: ?Sized,
 {
   /// Returns `true` if `item` is contained in the range.
   #[inline]
-  fn query_compare_contains<R>(&self, range: &R, item: &T::Ref<'a>) -> bool
+  fn query_compare_contains<R>(&self, range: &R, item: &T::Ref<'_>) -> bool
   where
     R: ?Sized + RangeBounds<Q>,
   {
@@ -225,9 +225,9 @@ where
   }
 }
 
-impl<'a, T, Q, C> TypeRefQueryRangeComparator<'a, T, Q> for C
+impl<T, Q, C> TypeRefQueryRangeComparator<T, Q> for C
 where
-  C: TypeRefQueryComparator<'a, T, Q>,
+  C: TypeRefQueryComparator<T, Q>,
   T: Type + ?Sized,
   Q: ?Sized,
 {
@@ -287,19 +287,19 @@ const _: () = {
           }
         }
 
-        impl<'a, T, C> TypeRefEquivalentor<'a, T> for $ty
+        impl<T, C> TypeRefEquivalentor<T> for $ty
         where
-          C: TypeRefEquivalentor<'a, T>,
+          C: TypeRefEquivalentor<T>,
           T: Type + ?Sized,
         {
           #[inline]
-          fn equivalent_ref(&self, a: &T, b: &T::Ref<'a>) -> bool {
+          fn equivalent_ref(&self, a: &T, b: &T::Ref<'_>) -> bool {
             (**self).equivalent_ref(a, b)
           }
 
           /// Compare `a` to `b` and return `true` if they are equal.
           #[inline]
-          fn equivalent_refs(
+          fn equivalent_refs<'a>(
             &self,
             a: &T::Ref<'a>,
             b: &T::Ref<'a>,
@@ -308,14 +308,14 @@ const _: () = {
           }
         }
 
-        impl<'a, T, Q, C> TypeRefQueryEquivalentor<'a, T, Q> for $ty
+        impl<T, Q, C> TypeRefQueryEquivalentor<T, Q> for $ty
         where
           Q: ?Sized,
           T: Type + ?Sized,
-          C: TypeRefQueryEquivalentor<'a, T, Q>,
+          C: TypeRefQueryEquivalentor<T, Q>,
         {
           #[inline]
-          fn query_equivalent_ref(&self, a: &T::Ref<'a>, b: &Q) -> bool {
+          fn query_equivalent_ref(&self, a: &T::Ref<'_>, b: &Q) -> bool {
             (**self).query_equivalent_ref(a, b)
           }
         }
@@ -344,18 +344,18 @@ const _: () = {
           }
         }
 
-        impl<'a, T, C> TypeRefComparator<'a, T> for $ty
+        impl<T, C> TypeRefComparator<T> for $ty
         where
-          C: TypeRefComparator<'a, T>,
+          C: TypeRefComparator<T>,
           T: Type + ?Sized,
         {
           #[inline]
-          fn compare_ref(&self, a: &T, b: &T::Ref<'a>) -> cmp::Ordering {
+          fn compare_ref(&self, a: &T, b: &T::Ref<'_>) -> cmp::Ordering {
             (**self).compare_ref(a, b)
           }
 
           #[inline]
-          fn compare_refs(
+          fn compare_refs<'a>(
             &self,
             a: &T::Ref<'a>,
             b: &T::Ref<'a>,
@@ -364,14 +364,14 @@ const _: () = {
           }
         }
 
-        impl<'a, T, Q, C> TypeRefQueryComparator<'a, T, Q> for $ty
+        impl<T, Q, C> TypeRefQueryComparator<T, Q> for $ty
         where
           Q: ?Sized,
           T: Type + ?Sized,
-          C: TypeRefQueryComparator<'a, T, Q>,
+          C: TypeRefQueryComparator<T, Q>,
         {
           #[inline]
-          fn query_compare_ref(&self, a: &T::Ref<'a>, b: &Q) -> cmp::Ordering {
+          fn query_compare_ref(&self, a: &T::Ref<'_>, b: &Q) -> cmp::Ordering {
             (**self).query_compare_ref(a, b)
           }
         }

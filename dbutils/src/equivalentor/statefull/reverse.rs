@@ -18,18 +18,18 @@ where
   }
 }
 
-impl<'a, C, T> TypeRefEquivalentor<'a, T> for Reverse<C>
+impl<C, T> TypeRefEquivalentor<T> for Reverse<C>
 where
-  C: TypeRefEquivalentor<'a, T>,
+  C: TypeRefEquivalentor<T>,
   T: Type + ?Sized,
 {
   #[inline]
-  fn equivalent_ref(&self, a: &T, b: &T::Ref<'a>) -> bool {
+  fn equivalent_ref(&self, a: &T, b: &T::Ref<'_>) -> bool {
     self.0.equivalent_ref(a, b)
   }
 
   #[inline]
-  fn equivalent_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
+  fn equivalent_refs<'a>(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
     self.0.equivalent_refs(a, b)
   }
 }
@@ -46,14 +46,14 @@ where
   }
 }
 
-impl<'a, C, T, Q> TypeRefQueryEquivalentor<'a, T, Q> for Reverse<C>
+impl<C, T, Q> TypeRefQueryEquivalentor<T, Q> for Reverse<C>
 where
-  C: TypeRefQueryEquivalentor<'a, T, Q>,
+  C: TypeRefQueryEquivalentor<T, Q>,
   T: Type + ?Sized,
   Q: ?Sized,
 {
   #[inline]
-  fn query_equivalent_ref(&self, a: &T::Ref<'a>, b: &Q) -> bool {
+  fn query_equivalent_ref(&self, a: &T::Ref<'_>, b: &Q) -> bool {
     self.0.query_equivalent_ref(a, b)
   }
 }
@@ -69,18 +69,18 @@ where
   }
 }
 
-impl<'a, C, T> TypeRefComparator<'a, T> for Reverse<C>
+impl<C, T> TypeRefComparator<T> for Reverse<C>
 where
-  C: TypeRefComparator<'a, T>,
+  C: TypeRefComparator<T>,
   T: Type + ?Sized,
 {
   #[inline]
-  fn compare_ref(&self, a: &T, b: &T::Ref<'a>) -> cmp::Ordering {
+  fn compare_ref(&self, a: &T, b: &T::Ref<'_>) -> cmp::Ordering {
     self.0.compare_ref(a, b).reverse()
   }
 
   #[inline]
-  fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
+  fn compare_refs<'a>(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
     self.0.compare_refs(a, b).reverse()
   }
 }
@@ -97,14 +97,14 @@ where
   }
 }
 
-impl<'a, C, T, Q> TypeRefQueryComparator<'a, T, Q> for Reverse<C>
+impl<C, T, Q> TypeRefQueryComparator<T, Q> for Reverse<C>
 where
-  C: TypeRefQueryComparator<'a, T, Q>,
+  C: TypeRefQueryComparator<T, Q>,
   T: Type + ?Sized,
   Q: ?Sized,
 {
   #[inline]
-  fn query_compare_ref(&self, a: &T::Ref<'a>, b: &Q) -> cmp::Ordering {
+  fn query_compare_ref(&self, a: &T::Ref<'_>, b: &Q) -> cmp::Ordering {
     self.0.query_compare_ref(a, b).reverse()
   }
 }
