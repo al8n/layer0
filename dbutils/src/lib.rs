@@ -33,6 +33,9 @@ pub mod equivalentor;
 /// Types and traits for encoding and decoding.
 pub mod types;
 
+/// Snapshot layer for multiple versions storage.
+pub mod snapshoter;
+
 #[doc(hidden)]
 pub mod __private {
   pub use paste;
