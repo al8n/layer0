@@ -3,7 +3,7 @@ members = [
   "bloomur",
   "cheap-clone",
   "dbutils",
-  "indexsort",
+  "indexsort", "snapshotor",
   "waterark",
 ]
 resolver = "2"
