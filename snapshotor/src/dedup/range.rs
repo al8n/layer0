@@ -6,8 +6,8 @@ use core::{
 use dbutils::equivalentor::{Comparator, QueryComparator, QueryRangeComparator};
 
 use crate::{
-  next_back_dedup, next_dedup, sealed::SealedRange, Builder, Cursor, DoubleEndedCursor, Entry, Seekable,
-  Validator,
+  next_back_dedup, next_dedup, sealed::SealedRange, Builder, Cursor, DoubleEndedCursor, Entry,
+  Seekable, Validator,
 };
 
 struct RangeKeyValidator<'a, C, R, Q, E, V>

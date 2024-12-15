@@ -6,7 +6,8 @@
 
 use core::ops::{Bound, RangeBounds};
 
-use dbutils::equivalentor::{Ascend, Equivalentor};
+pub use dbutils::equivalentor;
+use equivalentor::{Ascend, Equivalentor};
 
 /// Provides deduplication functionality for iterators and ranges.
 ///
@@ -43,7 +44,8 @@ where
   E: ?Sized,
   Q: ?Sized,
   R: RangeBounds<Q>,
-{}
+{
+}
 
 impl<Q, R, E, T> IntoRange<Q, R, E> for T
 where
@@ -58,7 +60,8 @@ where
 pub trait IntoIter<E>: sealed::SealedIter<E>
 where
   E: ?Sized,
-{}
+{
+}
 
 impl<E, T> IntoIter<E> for T
 where
@@ -265,8 +268,7 @@ pub trait DoubleEndedCursorExt: DoubleEndedCursor {
 impl<R> DoubleEndedCursorExt for R where R: DoubleEndedCursor + ?Sized {}
 
 /// The builder for creating an iterator.
-pub struct Builder<I, C = Ascend, K = NoopValidator, V = NoopValidator>
-{
+pub struct Builder<I, C = Ascend, K = NoopValidator, V = NoopValidator> {
   comparator: C,
   key_validator: K,
   value_validator: V,

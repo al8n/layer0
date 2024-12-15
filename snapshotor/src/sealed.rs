@@ -2,7 +2,6 @@ use core::ops::RangeBounds;
 
 use super::{Builder, Entry, Rewindable, Seekable};
 
-
 pub trait SealedRange<Q, R, E>
 where
   E: ?Sized,
