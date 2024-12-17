@@ -1,0 +1,18 @@
+[package]
+name = "snapshotor"
+version = "0.0.0"
+repository = "https://github.com/al8n/layer0/tree/main/snapshotor"
+edition.workspace = true
+rust-version = "1.81.0"
+homepage.workspace = true
+license.workspace = true
+metadata.workspace = true
+description = "An abstraction layer of snapshot for developing multiple versions storage"
+categories = ["data-structures", "database-implementations", "development-tools"]
+keywords = ["snapshot", "versioning", "database", "mvcc"]
+
+[features]
+default = []
+
+[dependencies]
+dbutils = { version = "0.12", path = "../dbutils", default-features = false }

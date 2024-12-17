@@ -13,6 +13,16 @@ pub trait Equivalentor<T: ?Sized> {
   fn equivalent(&self, a: &T, b: &T) -> bool;
 }
 
+impl<T, E> Equivalentor<T> for &E
+where
+  T: ?Sized,
+  E: Equivalentor<T> + ?Sized,
+{
+  fn equivalent(&self, a: &T, b: &T) -> bool {
+    E::equivalent(self, a, b)
+  }
+}
+
 /// Statefull custom equivalence trait.
 pub trait TypeRefEquivalentor<T>: Equivalentor<T>
 where
@@ -49,6 +59,16 @@ where
 pub trait Comparator<T: ?Sized>: Equivalentor<T> {
   /// Compare `a` to `b` and return their ordering.
   fn compare(&self, a: &T, b: &T) -> cmp::Ordering;
+}
+
+impl<T, C> Comparator<T> for &C
+where
+  T: ?Sized,
+  C: Comparator<T> + ?Sized,
+{
+  fn compare(&self, a: &T, b: &T) -> cmp::Ordering {
+    C::compare(self, a, b)
+  }
 }
 
 /// `RangeComparator` is implemented as an extention to [`Comparator`] to
