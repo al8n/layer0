@@ -1,16 +1,19 @@
 use core::cell::OnceCell;
 
-use super::TypeRef;
+use super::{Type, TypeRef};
 
 /// A lazy initialized reference type for a [`Type`](super::Type).
-pub struct LazyRef<'a, T> {
+pub struct LazyRef<'a, T>
+where
+  T: Type + ?Sized,
+{
   raw: Option<&'a [u8]>,
-  val: OnceCell<T>,
+  val: OnceCell<T::Ref<'a>>,
 }
 
 impl<'a, T> LazyRef<'a, T>
 where
-  T: TypeRef<'a>,
+  T: Type + ?Sized,
 {
   /// Creates a new `LazyRef` from a raw byte slice.
   ///
@@ -26,7 +29,7 @@ where
 
   /// Creates a new `LazyRef` from an initialized reference type.
   #[inline]
-  pub fn new(val: T) -> Self {
+  pub fn new(val: T::Ref<'a>) -> Self {
     Self {
       raw: val.as_raw(),
       val: OnceCell::from(val),
@@ -38,7 +41,7 @@ where
   /// ## Safety
   /// - The result of [`TypeRef::from_slice(raw)`](TypeRef::from_slice) must be the same as the given `val`.
   #[inline]
-  pub unsafe fn with_raw(val: T, raw: &'a [u8]) -> Self {
+  pub unsafe fn with_raw(val: T::Ref<'a>, raw: &'a [u8]) -> Self {
     Self {
       raw: Some(raw),
       val: OnceCell::from(val),
@@ -54,12 +57,12 @@ where
 
 impl<'a, T> LazyRef<'a, T>
 where
-  T: TypeRef<'a>,
+  T: Type + ?Sized,
 {
   /// Returns the reference value.
-  pub fn get(&self) -> &T {
+  pub fn get(&self) -> &T::Ref<'a> {
     self.val.get_or_init(|| unsafe {
-      T::from_slice(
+      <T::Ref<'_> as TypeRef<'_>>::from_slice(
         self
           .raw
           .expect("value must be initialized when raw is None"),
@@ -70,7 +73,8 @@ where
 
 impl<'a, T> core::fmt::Debug for LazyRef<'a, T>
 where
-  T: core::fmt::Debug + TypeRef<'a>,
+  T: Type + ?Sized,
+  T::Ref<'a>: core::fmt::Debug,
 {
   #[inline]
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -80,7 +84,8 @@ where
 
 impl<'a, T> core::fmt::Display for LazyRef<'a, T>
 where
-  T: core::fmt::Display + TypeRef<'a>,
+  T: Type + ?Sized,
+  T::Ref<'a>: core::fmt::Display,
 {
   #[inline]
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -90,7 +95,8 @@ where
 
 impl<'a, T> PartialEq for LazyRef<'a, T>
 where
-  T: TypeRef<'a> + PartialEq,
+  T: Type + ?Sized,
+  T::Ref<'a>: PartialEq,
 {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
@@ -98,11 +104,17 @@ where
   }
 }
 
-impl<'a, T> Eq for LazyRef<'a, T> where T: TypeRef<'a> + Eq {}
+impl<'a, T> Eq for LazyRef<'a, T>
+where
+  T: Type + ?Sized,
+  T::Ref<'a>: Eq,
+{
+}
 
 impl<'a, T> PartialOrd for LazyRef<'a, T>
 where
-  T: TypeRef<'a> + PartialOrd,
+  T: Type + ?Sized,
+  T::Ref<'a>: PartialOrd,
 {
   #[inline]
   fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -112,7 +124,8 @@ where
 
 impl<'a, T> Ord for LazyRef<'a, T>
 where
-  T: TypeRef<'a> + Ord,
+  T: Type + ?Sized,
+  T::Ref<'a>: Ord,
 {
   #[inline]
   fn cmp(&self, other: &Self) -> core::cmp::Ordering {
@@ -122,7 +135,8 @@ where
 
 impl<'a, T> core::hash::Hash for LazyRef<'a, T>
 where
-  T: TypeRef<'a> + core::hash::Hash,
+  T: Type + ?Sized,
+  T::Ref<'a>: core::hash::Hash,
 {
   #[inline]
   fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -130,9 +144,9 @@ where
   }
 }
 
-impl<'a, T> Clone for LazyRef<'a, T>
+impl<T> Clone for LazyRef<'_, T>
 where
-  T: TypeRef<'a>,
+  T: Type + ?Sized,
 {
   #[inline]
   fn clone(&self) -> Self {
@@ -143,21 +157,21 @@ where
   }
 }
 
-impl<'a, T> AsRef<T> for LazyRef<'a, T>
+impl<'a, T> AsRef<T::Ref<'a>> for LazyRef<'a, T>
 where
-  T: TypeRef<'a>,
+  T: Type + ?Sized,
 {
   #[inline]
-  fn as_ref(&self) -> &T {
+  fn as_ref(&self) -> &T::Ref<'a> {
     self
   }
 }
 
 impl<'a, T> core::ops::Deref for LazyRef<'a, T>
 where
-  T: TypeRef<'a>,
+  T: Type + ?Sized,
 {
-  type Target = T;
+  type Target = T::Ref<'a>;
 
   #[inline]
   fn deref(&self) -> &Self::Target {
