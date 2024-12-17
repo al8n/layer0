@@ -2,7 +2,7 @@ use core::cell::OnceCell;
 
 use super::{Type, TypeRef};
 
-/// A lazy initialized reference type for a [`Type`](super::Type).
+/// A lazy initialized reference type for a [`Type`].
 pub struct LazyRef<'a, T>
 where
   T: Type + ?Sized,
