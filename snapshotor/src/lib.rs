@@ -39,7 +39,7 @@ pub mod valid;
 mod sealed;
 
 /// A trait for types that can be finalized to a `Range`.
-pub trait IntoRange<Q, R, E>: sealed::SealedRange<Q, R, E>
+pub trait ToRange<Q, R, E>: sealed::SealedRange<Q, R, E>
 where
   E: ?Sized,
   Q: ?Sized,
@@ -47,7 +47,7 @@ where
 {
 }
 
-impl<Q, R, E, T> IntoRange<Q, R, E> for T
+impl<Q, R, E, T> ToRange<Q, R, E> for T
 where
   E: ?Sized,
   Q: ?Sized,
@@ -57,13 +57,13 @@ where
 }
 
 /// A trait for types that can be finalized to a `Range`.
-pub trait IntoIter<E>: sealed::SealedIter<E>
+pub trait ToIter<E>: sealed::SealedIter<E>
 where
   E: ?Sized,
 {
 }
 
-impl<E, T> IntoIter<E> for T
+impl<E, T> ToIter<E> for T
 where
   E: ?Sized,
   T: sealed::SealedIter<E>,
@@ -344,7 +344,7 @@ impl<I, C, K, V> Builder<I, C, K, V> {
   pub fn iter<E, F>(self, version: E::Version) -> F
   where
     E: Entry,
-    F: IntoIter<E, Initializor = I, Comparator = C, KeyValidator = K, ValueValidator = V>,
+    F: ToIter<E, Initializor = I, Comparator = C, KeyValidator = K, ValueValidator = V>,
     I: Rewindable<Entry = E>,
   {
     F::new(version, self)
@@ -357,7 +357,7 @@ impl<I, C, K, V> Builder<I, C, K, V> {
     R: RangeBounds<Q>,
     Q: ?Sized,
     E: Entry,
-    F: IntoRange<Q, R, E, Initializor = I, Comparator = C, KeyValidator = K, ValueValidator = V>,
+    F: ToRange<Q, R, E, Initializor = I, Comparator = C, KeyValidator = K, ValueValidator = V>,
     I: Seekable<Q, Entry = E>,
   {
     F::range(version, range, self)

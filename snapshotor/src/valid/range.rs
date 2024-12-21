@@ -3,72 +3,12 @@ use core::{
   ops::{Bound, RangeBounds},
 };
 
-use dbutils::equivalentor::{Comparator, QueryComparator, QueryRangeComparator};
+use dbutils::equivalentor::{Comparator, QueryComparator};
 
-use crate::{next_back_dedup, next_dedup, Cursor, DoubleEndedCursor, Entry, Seekable, Validator};
-
-struct RangeKeyValidator<'a, C, R, Q, E, V>
-where
-  C: QueryComparator<E::Key, Q>,
-  R: RangeBounds<Q>,
-  Q: ?Sized,
-  E: Entry,
-  V: Validator<E::Key>,
-{
-  key_validator: &'a V,
-  range: &'a R,
-  comparator: &'a C,
-  last: Option<&'a E::Key>,
-  _e: PhantomData<E>,
-  _q: PhantomData<Q>,
-}
-
-impl<'a, C, R, Q, E, V> RangeKeyValidator<'a, C, R, Q, E, V>
-where
-  C: QueryComparator<E::Key, Q>,
-  R: RangeBounds<Q>,
-  Q: ?Sized,
-  E: Entry,
-  V: Validator<E::Key>,
-{
-  #[inline]
-  const fn new(
-    key_validator: &'a V,
-    range: &'a R,
-    comparator: &'a C,
-    last: Option<&'a E::Key>,
-  ) -> Self {
-    Self {
-      key_validator,
-      range,
-      comparator,
-      last,
-      _e: PhantomData,
-      _q: PhantomData,
-    }
-  }
-}
-
-impl<C, R, Q, E, V> Validator<E::Key> for RangeKeyValidator<'_, C, R, Q, E, V>
-where
-  C: QueryComparator<E::Key, Q>,
-  R: RangeBounds<Q>,
-  Q: ?Sized,
-  E: Entry,
-  V: Validator<E::Key>,
-{
-  #[inline]
-  fn validate(&self, key: &E::Key) -> bool {
-    let same = if let Some(last) = self.last {
-      self.comparator.equivalent(key, last)
-    } else {
-      false
-    };
-    !same
-      && self.key_validator.validate(key)
-      && self.comparator.query_compare_contains(self.range, key)
-  }
-}
+use crate::{
+  next_back_valid, next_valid, sealed::SealedRange, Builder, Cursor, DoubleEndedCursor, Entry,
+  Seekable, Validator,
+};
 
 /// An iterator wrapper on any iterator yielding [`Entry`].
 ///
@@ -91,28 +31,36 @@ where
   _q: PhantomData<Q>,
 }
 
-impl<R, Q, S, E, C, K, V> Range<R, Q, S, E, C, K, V>
+impl<R, Q, S, E, C, K, V> SealedRange<Q, R, E> for Range<R, Q, S, E, C, K, V>
 where
   E: Entry,
   Q: ?Sized,
   R: RangeBounds<Q>,
   S: Seekable<Q, Entry = E>,
 {
-  /// Create a new iterator wrapper.
-  #[inline]
-  pub const fn new(
+  type Initializor = S;
+
+  type KeyValidator = K;
+
+  type ValueValidator = V;
+
+  type Comparator = C;
+
+  fn range(
     version: E::Version,
     range: R,
-    seeker: S,
-    comparator: C,
-    key_validator: K,
-    value_validator: V,
-  ) -> Self {
+    builder: Builder<Self::Initializor, Self::Comparator, Self::KeyValidator, Self::ValueValidator>,
+  ) -> Self
+  where
+    E: Entry,
+    Self: Sized,
+    Self::Initializor: Seekable<Q, Entry = E>,
+  {
     Self {
-      seeker,
-      comparator,
-      key_validator,
-      value_validator,
+      seeker: builder.initializor,
+      comparator: builder.comparator,
+      key_validator: builder.key_validator,
+      value_validator: builder.value_validator,
       head: None,
       tail: None,
       query_version: version,
@@ -120,7 +68,15 @@ where
       _q: PhantomData,
     }
   }
+}
 
+impl<R, Q, S, E, C, K, V> Range<R, Q, S, E, C, K, V>
+where
+  E: Entry,
+  Q: ?Sized,
+  R: RangeBounds<Q>,
+  S: Seekable<Q, Entry = E>,
+{
   /// Returns the query version of the iterator.
   #[inline]
   pub const fn query_version(&self) -> &E::Version {
@@ -164,18 +120,10 @@ where
       None => self.seeker.lower_bound(self.range.start_bound()),
     };
 
-    let kv = RangeKeyValidator::<C, R, Q, E, K>::new(
-      &self.key_validator,
-      &self.range,
-      &self.comparator,
-      self.head.as_ref().map(|h| h.key()),
-    );
-
-    self.head = next_dedup(
+    self.head = next_valid(
       next_head,
       &self.query_version,
-      &self.comparator,
-      &kv,
+      &self.key_validator,
       &self.value_validator,
     );
 
@@ -215,20 +163,13 @@ where
   fn next_back(&mut self) -> Option<Self::Item> {
     let next_tail = match self.tail.as_ref() {
       Some(tail) => tail.next_back(),
-      None => self.seeker.upper_bound(self.range.start_bound()),
+      None => self.seeker.upper_bound(self.range.end_bound()),
     };
 
-    let kv = RangeKeyValidator::<C, R, Q, E, K>::new(
-      &self.key_validator,
-      &self.range,
-      &self.comparator,
-      self.tail.as_ref().map(|t| t.key()),
-    );
-    self.tail = next_back_dedup(
+    self.tail = next_back_valid(
       next_tail,
       &self.query_version,
-      &self.comparator,
-      &kv,
+      &self.key_validator,
       &self.value_validator,
     );
 

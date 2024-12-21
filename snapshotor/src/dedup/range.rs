@@ -234,7 +234,7 @@ where
   fn next_back(&mut self) -> Option<Self::Item> {
     let next_tail = match self.tail.as_ref() {
       Some(tail) => tail.next_back(),
-      None => self.seeker.upper_bound(self.range.start_bound()),
+      None => self.seeker.upper_bound(self.range.end_bound()),
     };
 
     let kv = RangeKeyValidator::<C, R, Q, E, K>::new(
