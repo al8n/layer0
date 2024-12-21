@@ -7,6 +7,8 @@ ignore:
   - "**/benches/"
   - "**/tests/"
   - "indexsort/tests/"
+  - "snapshotor/tests/"
+  - "snapshotor/examples/"
 
 coverage:
   status:
