@@ -1,6 +1,6 @@
 [package]
 name = "snapshotor"
-version = "0.0.0"
+version = "0.1.0"
 repository = "https://github.com/al8n/layer0/tree/main/snapshotor"
 edition.workspace = true
 rust-version = "1.81.0"
@@ -16,3 +16,14 @@ default = []
 
 [dependencies]
 dbutils = { version = "0.12", path = "../dbutils", default-features = false }
+
+[dev-dependencies]
+crossbeam-skiplist = { package = "crossbeam-skiplist-pr1132", version = "0.2" }
+
+[[test]]
+name = "skiplist-mvcc"
+path = "tests/skiplist_mvcc.rs"
+
+[[example]]
+name = "skiplist-mvcc"
+path = "examples/skiplist_mvcc.rs"
