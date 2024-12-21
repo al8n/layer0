@@ -64,18 +64,18 @@ where
   }
 }
 
-impl<T, C> StaticTypeRefEquivalentor<T> for Reverse<C>
+impl<'a, T, C> StaticTypeRefEquivalentor<'a, T> for Reverse<C>
 where
-  C: StaticTypeRefEquivalentor<T> + ?Sized,
+  C: StaticTypeRefEquivalentor<'a, T> + ?Sized,
   T: Type + ?Sized,
 {
   #[inline]
-  fn equivalent_ref(a: &T, b: &T::Ref<'_>) -> bool {
+  fn equivalent_ref(a: &T, b: &T::Ref<'a>) -> bool {
     C::equivalent_ref(a, b)
   }
 
   #[inline]
-  fn equivalent_refs<'a>(a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
+  fn equivalent_refs(a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
     C::equivalent_refs(a, b)
   }
 }
@@ -92,14 +92,14 @@ where
   }
 }
 
-impl<C, T, Q> StaticTypeRefQueryEquivalentor<T, Q> for Reverse<C>
+impl<'a, C, T, Q> StaticTypeRefQueryEquivalentor<'a, T, Q> for Reverse<C>
 where
-  C: StaticTypeRefQueryEquivalentor<T, Q> + ?Sized,
+  C: StaticTypeRefQueryEquivalentor<'a, T, Q> + ?Sized,
   T: Type + ?Sized,
   Q: ?Sized,
 {
   #[inline]
-  fn query_equivalent_ref(a: &T::Ref<'_>, b: &Q) -> bool {
+  fn query_equivalent_ref(a: &T::Ref<'a>, b: &Q) -> bool {
     C::query_equivalent_ref(a, b)
   }
 }
@@ -115,18 +115,18 @@ where
   }
 }
 
-impl<C, T> StaticTypeRefComparator<T> for Reverse<C>
+impl<'a, C, T> StaticTypeRefComparator<'a, T> for Reverse<C>
 where
-  C: StaticTypeRefComparator<T> + ?Sized,
+  C: StaticTypeRefComparator<'a, T> + ?Sized,
   T: Type + ?Sized,
 {
   #[inline]
-  fn compare_ref(a: &T, b: &T::Ref<'_>) -> cmp::Ordering {
+  fn compare_ref(a: &T, b: &T::Ref<'a>) -> cmp::Ordering {
     C::compare_ref(a, b).reverse()
   }
 
   #[inline]
-  fn compare_refs<'a>(a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
+  fn compare_refs(a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
     C::compare_refs(a, b).reverse()
   }
 }
@@ -143,14 +143,14 @@ where
   }
 }
 
-impl<C, T, Q> StaticTypeRefQueryComparator<T, Q> for Reverse<C>
+impl<'a, C, T, Q> StaticTypeRefQueryComparator<'a, T, Q> for Reverse<C>
 where
-  C: StaticTypeRefQueryComparator<T, Q> + ?Sized,
+  C: StaticTypeRefQueryComparator<'a, T, Q> + ?Sized,
   T: Type + ?Sized,
   Q: ?Sized,
 {
   #[inline]
-  fn query_compare_ref(a: &T::Ref<'_>, b: &Q) -> cmp::Ordering {
+  fn query_compare_ref(a: &T::Ref<'a>, b: &Q) -> cmp::Ordering {
     C::query_compare_ref(a, b).reverse()
   }
 }
@@ -166,18 +166,18 @@ where
   }
 }
 
-impl<C, T> TypeRefEquivalentor<T> for Reverse<C>
+impl<'a, C, T> TypeRefEquivalentor<'a, T> for Reverse<C>
 where
-  C: StaticTypeRefEquivalentor<T> + ?Sized,
+  C: StaticTypeRefEquivalentor<'a, T> + ?Sized,
   T: Type + ?Sized,
 {
   #[inline]
-  fn equivalent_ref(&self, a: &T, b: &T::Ref<'_>) -> bool {
+  fn equivalent_ref(&self, a: &T, b: &T::Ref<'a>) -> bool {
     C::equivalent_ref(a, b)
   }
 
   #[inline]
-  fn equivalent_refs<'a>(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
+  fn equivalent_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
     C::equivalent_refs(a, b)
   }
 }
@@ -194,14 +194,14 @@ where
   }
 }
 
-impl<C, T, Q> TypeRefQueryEquivalentor<T, Q> for Reverse<C>
+impl<'a, C, T, Q> TypeRefQueryEquivalentor<'a, T, Q> for Reverse<C>
 where
-  C: StaticTypeRefQueryEquivalentor<T, Q> + ?Sized,
+  C: StaticTypeRefQueryEquivalentor<'a, T, Q> + ?Sized,
   T: Type + ?Sized,
   Q: ?Sized,
 {
   #[inline]
-  fn query_equivalent_ref(&self, a: &T::Ref<'_>, b: &Q) -> bool {
+  fn query_equivalent_ref(&self, a: &T::Ref<'a>, b: &Q) -> bool {
     C::query_equivalent_ref(a, b)
   }
 }
@@ -217,18 +217,18 @@ where
   }
 }
 
-impl<C, T> TypeRefComparator<T> for Reverse<C>
+impl<'a, C, T> TypeRefComparator<'a, T> for Reverse<C>
 where
-  C: StaticTypeRefComparator<T> + ?Sized,
+  C: StaticTypeRefComparator<'a, T> + ?Sized,
   T: Type + ?Sized,
 {
   #[inline]
-  fn compare_ref(&self, a: &T, b: &T::Ref<'_>) -> cmp::Ordering {
+  fn compare_ref(&self, a: &T, b: &T::Ref<'a>) -> cmp::Ordering {
     C::compare_ref(a, b).reverse()
   }
 
   #[inline]
-  fn compare_refs<'a>(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
+  fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
     C::compare_refs(a, b).reverse()
   }
 }
@@ -245,14 +245,14 @@ where
   }
 }
 
-impl<C, T, Q> TypeRefQueryComparator<T, Q> for Reverse<C>
+impl<'a, C, T, Q> TypeRefQueryComparator<'a, T, Q> for Reverse<C>
 where
-  C: StaticTypeRefQueryComparator<T, Q> + ?Sized,
+  C: StaticTypeRefQueryComparator<'a, T, Q> + ?Sized,
   T: Type + ?Sized,
   Q: ?Sized,
 {
   #[inline]
-  fn query_compare_ref(&self, a: &T::Ref<'_>, b: &Q) -> cmp::Ordering {
+  fn query_compare_ref(&self, a: &T::Ref<'a>, b: &Q) -> cmp::Ordering {
     C::query_compare_ref(a, b).reverse()
   }
 }
