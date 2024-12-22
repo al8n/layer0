@@ -197,8 +197,7 @@ impl core::fmt::Display for DecodeVarintError {
   }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for DecodeVarintError {}
+impl core::error::Error for DecodeVarintError {}
 
 /// Decodes a value from LEB128 variable length format.
 ///
