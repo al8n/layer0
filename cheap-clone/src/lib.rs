@@ -54,6 +54,10 @@ impl CheapClone for bytes1::Bytes {}
 #[cfg_attr(docsrs, doc(cfg(feature = "smol_str03")))]
 impl CheapClone for smol_str03::SmolStr {}
 
+#[cfg(feature = "smol_str02")]
+#[cfg_attr(docsrs, doc(cfg(feature = "smol_str02")))]
+impl CheapClone for smol_str02::SmolStr {}
+
 #[cfg(feature = "faststr02")]
 #[cfg_attr(docsrs, doc(cfg(feature = "faststr02")))]
 impl CheapClone for faststr02::FastStr {}
