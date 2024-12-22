@@ -1,4 +1,4 @@
-use crate::error::{IncompleteBuffer, InsufficientBuffer};
+pub use crate::error::{IncompleteBuffer, InsufficientBuffer};
 
 /**
 * This file is modified based on the https://github.com/arnohaase/bytes-varint
