@@ -35,6 +35,20 @@ where
   fn equivalent_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool;
 }
 
+impl<'a, T, E> TypeRefEquivalentor<'a, T> for &E
+where
+  T: Type + ?Sized,
+  E: TypeRefEquivalentor<'a, T> + ?Sized,
+{
+  fn equivalent_ref(&self, a: &T, b: &T::Ref<'a>) -> bool {
+    E::equivalent_ref(self, a, b)
+  }
+
+  fn equivalent_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> bool {
+    E::equivalent_refs(self, a, b)
+  }
+}
+
 /// Statefull custom equivalence trait for query purpose.
 pub trait TypeRefQueryEquivalentor<'a, T, Q>: TypeRefEquivalentor<'a, T>
 where
@@ -45,6 +59,16 @@ where
   fn query_equivalent_ref(&self, a: &T::Ref<'a>, b: &Q) -> bool;
 }
 
+impl<'a, T, C> TypeRefQueryEquivalentor<'a, T, T> for &C
+where
+  C: TypeRefEquivalentor<'a, T>,
+  T: Type + ?Sized,
+{
+  fn query_equivalent_ref(&self, a: &<T as Type>::Ref<'a>, b: &T) -> bool {
+    C::equivalent_ref(self, b, a)
+  }
+}
+
 /// Statefull custom equivalence trait for query purpose.
 pub trait QueryEquivalentor<T, Q>: Equivalentor<T>
 where
@@ -53,6 +77,16 @@ where
 {
   /// Compare `a` to `b` and return `true` if they are equal.
   fn query_equivalent(&self, a: &T, b: &Q) -> bool;
+}
+
+impl<T, C> QueryEquivalentor<T, T> for &C
+where
+  T: ?Sized,
+  C: Equivalentor<T> + ?Sized,
+{
+  fn query_equivalent(&self, a: &T, b: &T) -> bool {
+    C::equivalent(self, a, b)
+  }
 }
 
 /// Statefull custom ordering trait.
@@ -116,6 +150,20 @@ where
 
   /// Compare `a` to `b` and return their ordering.
   fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering;
+}
+
+impl<'a, T, C> TypeRefComparator<'a, T> for &C
+where
+  C: TypeRefComparator<'a, T>,
+  T: Type + ?Sized,
+{
+  fn compare_ref(&self, a: &T, b: &T::Ref<'a>) -> cmp::Ordering {
+    C::compare_ref(self, a, b)
+  }
+
+  fn compare_refs(&self, a: &T::Ref<'a>, b: &T::Ref<'a>) -> cmp::Ordering {
+    C::compare_refs(self, a, b)
+  }
 }
 
 /// `TypeRefRangeComparator` is implemented as an extention to [`TypeRefComparator`] to
@@ -206,6 +254,16 @@ where
   fn query_compare_ref(&self, a: &T::Ref<'a>, b: &Q) -> cmp::Ordering;
 }
 
+impl<'a, T, C> TypeRefQueryComparator<'a, T, T> for &C
+where
+  C: TypeRefComparator<'a, T>,
+  T: Type + ?Sized,
+{
+  fn query_compare_ref(&self, a: &<T as Type>::Ref<'a>, b: &T) -> cmp::Ordering {
+    C::compare_ref(self, b, a)
+  }
+}
+
 /// Statefull custom ordering trait for querying purpose.
 pub trait QueryComparator<T, Q>: Comparator<T> + QueryEquivalentor<T, Q>
 where
@@ -214,6 +272,16 @@ where
 {
   /// Compare `a` to `b` and return their ordering.
   fn query_compare(&self, a: &T, b: &Q) -> cmp::Ordering;
+}
+
+impl<T, C> QueryComparator<T, T> for &C
+where
+  T: ?Sized,
+  C: Comparator<T> + ?Sized,
+{
+  fn query_compare(&self, a: &T, b: &T) -> cmp::Ordering {
+    C::compare(self, a, b)
+  }
 }
 
 /// `TypeRefQueryRangeComparator` is implemented as an extention to [`TypeRefQueryComparator`] to
