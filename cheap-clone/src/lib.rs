@@ -1,17 +1,17 @@
 // `CheapClone` trait is inspired by https://github.com/graphprotocol/graph-node/blob/master/graph/src/cheap_clone.rs
 
 //! A trait which indicates that such type can be cloned cheaply.
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", test))]
 extern crate std;
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+extern crate alloc as std;
 
 macro_rules! impl_cheap_clone_for_copy {
   ($($ty: ty), +$(,)?) => {
@@ -32,10 +32,10 @@ macro_rules! impl_cheap_clone_for_copy {
 ///
 /// As a rule of thumb, only constant-time `Clone` impls should also implement CheapClone.
 /// Eg:
-/// - ✔ [`Arc<T>`](alloc::sync::Arc)
-/// - ✔ [`Rc<T>`](alloc::rc::Rc)
+/// - ✔ [`Arc<T>`](std::sync::Arc)
+/// - ✔ [`Rc<T>`](std::rc::Rc)
 /// - ✔ [`Bytes`](bytes1::Bytes)
-/// - ✗ [`Vec<T>`](alloc::vec::Vec)
+/// - ✗ [`Vec<T>`](std::vec::Vec)
 /// - ✔ [`SmolStr`](smol_str03::SmolStr)
 /// - ✔ [`FastStr`](faststr02::FastStr)
 /// - ✗ [`String`]
@@ -66,12 +66,12 @@ impl CheapClone for faststr02::FastStr {}
 #[cfg_attr(docsrs, doc(cfg(feature = "triomphe01")))]
 impl<T> CheapClone for triomphe01::Arc<T> {}
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", feature = "std"))]
 mod a {
   use super::CheapClone;
 
-  impl<T: ?Sized> CheapClone for alloc::rc::Rc<T> {}
-  impl<T: ?Sized> CheapClone for alloc::sync::Arc<T> {}
+  impl<T: ?Sized> CheapClone for std::rc::Rc<T> {}
+  impl<T: ?Sized> CheapClone for std::sync::Arc<T> {}
 }
 
 #[cfg(feature = "std")]
