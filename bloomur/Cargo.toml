@@ -30,7 +30,7 @@ libm = { version = "0.2", default-features = false }
 divan = "0.1"
 rand = "0.8"
 bloomfilter = "1"
-fastbloom = "0.7"
+fastbloom = "0.8"
 fastbloom-rs = "0.5"
 
 [[bench]]
