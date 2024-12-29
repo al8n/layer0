@@ -32,7 +32,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 agnostic-lite = { version = "0.3", optional = true }
 atomic_refcell = "0.1"
-smallvec-wrapper = { version = "0.1", default-features = false }
+smallvec-wrapper = { version = "0.2", default-features = false }
 crossbeam-utils = { version = "0.8", default-features = false }
 scopeguard = { version = "1" }
 
