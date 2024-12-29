@@ -29,7 +29,7 @@ libm = { version = "0.2", default-features = false }
 [dev-dependencies]
 divan = "0.1"
 rand = "0.8"
-bloomfilter = "1"
+bloomfilter = "3"
 fastbloom = "0.8"
 fastbloom-rs = "0.5"
 
