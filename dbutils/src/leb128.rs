@@ -62,6 +62,12 @@ macro_rules! encode_varint {
       $x >>= 7;
       i += 1;
     }
+
+    // Check buffer capacity before writing final byte
+    if i >= $buf.len() {
+      return Err(InsufficientBuffer::new());
+    }
+
     $buf[i] = $x as u8;
     Ok(i + 1)
   }};
@@ -678,5 +684,21 @@ mod tests {
       let written = encode_i128_varint(n, &mut write_buf).unwrap();
       assert_eq!(bytes, &write_buf[..written]);
     }
+  }
+
+  #[test]
+  fn test_length_delimited_insufficient_buffer_max_varint() {
+    // Create a data slice that requires the maximum varint size
+    let data = vec![0; u16::MAX as usize]; // Data size is u16::MAX
+    let mut buf = [0; 2]; // Buffer is too small for the varint (requires 3 bytes for u16 varint)
+
+    // Attempt to encode the data
+    let result = encode_u16_varint(data.len() as u16, &mut buf);
+
+    // Verify that the error is returned
+    assert!(matches!(
+      result,
+      Err(InsufficientBuffer { .. })
+    ));
   }
 }

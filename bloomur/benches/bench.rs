@@ -88,13 +88,13 @@ fn bloomur_xxhash3(bencher: Bencher) {
 #[divan::bench]
 fn bloomfilter(bencher: Bencher) {
   bencher.with_inputs(keys).bench_local_values(|keys| {
-    let mut f = bloomfilter::Bloom::new_for_fp_rate(100000, 0.001);
+    let mut f = bloomfilter::Bloom::new_for_fp_rate(100000, 0.001).unwrap();
 
     for k in keys.iter() {
       f.set(k);
     }
 
-    f.bitmap();
+    f.to_bytes();
   });
 }
 

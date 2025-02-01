@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.12.15"
+version = "0.12.16"
 repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"
@@ -49,6 +49,6 @@ faststr02 = { package = "faststr", version = "0.2", default-features = false, op
 tracing = { version = "0.1", default-features = false, optional = true }
 
 [dev-dependencies]
-rstest = "0.23"
+rstest = "0.24"
 quickcheck = "1"
 proptest = "1"
