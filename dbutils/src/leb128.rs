@@ -1,12 +1,14 @@
+use core::num::NonZeroU64;
+
 pub use crate::error::{IncompleteBuffer, InsufficientBuffer};
 
 /**
 * This file is modified based on the https://github.com/arnohaase/bytes-varint
 */
-const MAX_U128_LEB128: usize = 19;
-const MAX_U64_LEB128: usize = 10;
-const MAX_U32_LEB128: usize = 5;
-const MAX_U16_LEB128: usize = 3;
+const MAX_U128_LEB128: usize = encoded_u128_varint_len(u128::MAX);
+const MAX_U64_LEB128: usize = encoded_u64_varint_len(u64::MAX);
+const MAX_U32_LEB128: usize = encoded_u32_varint_len(u32::MAX);
+const MAX_U16_LEB128: usize = encoded_u16_varint_len(u16::MAX);
 
 macro_rules! decode_varint {
   (|$buf:ident| $ty:ident::$max_size:ident) => {{
@@ -77,9 +79,18 @@ macro_rules! encode_varint {
 /// The returned value will be between 1 and 19, inclusive.
 #[inline]
 pub const fn encoded_u128_varint_len(value: u128) -> usize {
-  // Based on [VarintSize64][1].
-  // [1]: https://github.com/google/protobuf/blob/3.3.x/src/google/protobuf/io/coded_stream.h#L1301-L1309
-  ((((value | 1).leading_zeros() ^ 127) * 9 + 73) / 64) as usize
+  // Each byte in LEB128 encoding can hold 7 bits of data
+  // We want to find how many groups of 7 bits are needed
+  // Special case for 0 and small numbers
+  if value < 128 {
+    return 1;
+  }
+
+  // Calculate position of highest set bit
+  let highest_bit = 128 - value.leading_zeros();
+  // Convert to number of LEB128 bytes needed
+  // Each byte holds 7 bits, but we need to round up
+  ((highest_bit + 6) / 7) as usize
 }
 
 /// Returns the encoded length of the value in LEB128 variable length format.
@@ -87,8 +98,10 @@ pub const fn encoded_u128_varint_len(value: u128) -> usize {
 #[inline]
 pub const fn encoded_u64_varint_len(value: u64) -> usize {
   // Based on [VarintSize64][1].
-  // [1]: https://github.com/google/protobuf/blob/3.3.x/src/google/protobuf/io/coded_stream.h#L1301-L1309
-  ((((value | 1).leading_zeros() ^ 63) * 9 + 73) / 64) as usize
+  // [1]: https://github.com/protocolbuffers/protobuf/blob/v28.3/src/google/protobuf/io/coded_stream.h#L1744-L1756
+  // Safety: (value | 1) is never zero
+  let log2value = unsafe { NonZeroU64::new_unchecked(value | 1) }.ilog2();
+  ((log2value * 9 + (64 + 9)) / 64) as usize
 }
 
 /// Returns the encoded length of the value in LEB128 variable length format.
@@ -696,9 +709,93 @@ mod tests {
     let result = encode_u16_varint(data.len() as u16, &mut buf);
 
     // Verify that the error is returned
-    assert!(matches!(
-      result,
-      Err(InsufficientBuffer { .. })
-    ));
+    assert!(matches!(result, Err(InsufficientBuffer { .. })));
+  }
+}
+
+#[cfg(test)]
+mod fuzzy_tests {
+  use super::*;
+
+  use quickcheck_macros::quickcheck;
+
+  #[quickcheck]
+  fn fuzzy_u16(value: u16) -> bool {
+    let mut buffer = [0u8; 16];
+    let encoded_len = encode_u16_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_u16_varint_len(value));
+    assert!(encoded_len <= MAX_U16_LEB128);
+    let (bytes_read, decoded) = decode_u16_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_u32(value: u32) -> bool {
+    let mut buffer = [0u8; 16];
+    let encoded_len = encode_u32_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_u32_varint_len(value));
+    assert!(encoded_len <= MAX_U32_LEB128);
+    let (bytes_read, decoded) = decode_u32_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_u64(value: u64) -> bool {
+    let mut buffer = [0u8; 16];
+    let encoded_len = encode_u64_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_u64_varint_len(value));
+    assert!(encoded_len <= MAX_U64_LEB128);
+    let (bytes_read, decoded) = decode_u64_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_u128(value: u128) -> bool {
+    let mut buffer = [0u8; 20];
+    let encoded_len = encode_u128_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_u128_varint_len(value), "{value}");
+    assert!(encoded_len <= MAX_U128_LEB128);
+    let (bytes_read, decoded) = decode_u128_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_i16(value: i16) -> bool {
+    let mut buffer = [0u8; 16];
+    let encoded_len = encode_i16_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_i16_varint_len(value));
+    assert!(encoded_len <= MAX_U16_LEB128);
+    let (bytes_read, decoded) = decode_i16_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_i32(value: i32) -> bool {
+    let mut buffer = [0u8; 16];
+    let encoded_len = encode_i32_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_i32_varint_len(value));
+    assert!(encoded_len <= MAX_U32_LEB128);
+    let (bytes_read, decoded) = decode_i32_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_i64(value: i64) -> bool {
+    let mut buffer = [0u8; 16];
+    let encoded_len = encode_i64_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_i64_varint_len(value));
+    assert!(encoded_len <= MAX_U64_LEB128);
+    let (bytes_read, decoded) = decode_i64_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
+  }
+
+  #[quickcheck]
+  fn fuzzy_i128(value: i128) -> bool {
+    let mut buffer = [0u8; 20];
+    let encoded_len = encode_i128_varint(value, &mut buffer).unwrap();
+    assert_eq!(encoded_len, encoded_i128_varint_len(value));
+    assert!(encoded_len <= MAX_U128_LEB128);
+    let (bytes_read, decoded) = decode_i128_varint(&buffer[..encoded_len]).unwrap();
+    value == decoded && encoded_len == bytes_read
   }
 }
