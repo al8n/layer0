@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.12.17"
+version = "0.13.0"
 repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"
@@ -13,7 +13,7 @@ categories = ["data-structures", "database-implementations", "development-tools"
 [features]
 default = ["std", "cheap-clone/default"]
 alloc = ["cheap-clone/alloc"]
-std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std", "triomphe01?/std"]
+std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std", "triomphe01?/std", "const-varint/default"]
 
 among = ["cheap-clone/among"]
 bytes1 = ["dep:bytes1", "cheap-clone/bytes1"]
@@ -29,6 +29,7 @@ xxhash3 = ["xxhash-rust/xxh3"]
 
 
 [dependencies]
+const-varint = { version = "0.1", default-features = false }
 equivalent-flipped = "1.0"
 either = { version = "1", default-features = false }
 cheap-clone = { version = "0.2", path = "../cheap-clone", default-features = false }

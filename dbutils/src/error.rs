@@ -123,3 +123,15 @@ impl core::fmt::Display for IncompleteBuffer {
 }
 
 impl core::error::Error for IncompleteBuffer {}
+
+impl From<const_varint::EncodeError> for InsufficientBuffer {
+  fn from(_: const_varint::EncodeError) -> Self {
+    InsufficientBuffer::new()
+  }
+}
+
+// impl From<const_varint::DecodeError> for IncompleteBuffer {
+//   fn from(_: const_varint::DecodeError) -> Self {
+//     IncompleteBuffer::new()
+//   }
+// }

@@ -16,6 +16,9 @@ homepage = "https://github.com/al8n/layer0"
 categories = ["asynchronous", "data-structures", "concurrency", "database-implementations", "development-tools"]
 license = "MIT OR Apache-2.0"
 
+[workspace.dependencies]
+dbutils = { version = "0.13", path = "./dbutils", default-features = false }
+
 [workspace.package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

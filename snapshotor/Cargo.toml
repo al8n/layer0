@@ -15,7 +15,7 @@ keywords = ["snapshot", "versioning", "database", "mvcc"]
 default = []
 
 [dependencies]
-dbutils = { version = "0.12", path = "../dbutils", default-features = false }
+dbutils.workspace = true 
 
 [dev-dependencies]
 crossbeam-skiplist = { package = "crossbeam-skiplist-pr1132", version = "0.2" }

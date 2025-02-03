@@ -164,7 +164,7 @@ macro_rules! impl_put_varint {
           // SAFETY: the value's ptr is aligned and the cap is the correct.
           unsafe {
             let slice = slice::from_raw_parts_mut(self.value.as_ptr().add(self.len), len);
-            [< encode_ $ty _varint >](value, slice).inspect(|_| {
+            const_varint::Varint::encode(&value, slice).map_err(Into::into).inspect(|_| {
               self.len += len;
             })
           }
@@ -187,7 +187,7 @@ macro_rules! impl_put_varint {
           // SAFETY: the value's ptr is aligned and the cap is the correct.
           unsafe {
             let slice = slice::from_raw_parts_mut(self.value.as_ptr().add(self.len), len);
-            [< encode_ $ty _varint >] (value, slice).inspect(|_| {
+            const_varint::Varint::encode(&value, slice).inspect(|_| {
               self.len += len;
             }).unwrap()
           }
