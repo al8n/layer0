@@ -17,6 +17,7 @@ categories = ["asynchronous", "data-structures", "concurrency", "database-implem
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+equivalent-flipped = "1"
 dbutils = { version = "0.13", path = "./dbutils", default-features = false }
 
 [workspace.package.metadata.docs.rs]

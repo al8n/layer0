@@ -30,7 +30,7 @@ xxhash3 = ["xxhash-rust/xxh3"]
 
 [dependencies]
 const-varint = { version = "0.1", default-features = false }
-equivalent-flipped = "1.0"
+equivalent-flipped.workspace = true
 either = { version = "1", default-features = false }
 cheap-clone = { version = "0.2", path = "../cheap-clone", default-features = false }
 paste = "1"
