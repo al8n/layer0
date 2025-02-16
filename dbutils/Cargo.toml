@@ -29,7 +29,7 @@ xxhash3 = ["xxhash-rust/xxh3"]
 
 
 [dependencies]
-const-varint = { version = "0.1", default-features = false }
+const-varint = { version = "0.2", default-features = false }
 equivalent-flipped.workspace = true
 either = { version = "1", default-features = false }
 cheap-clone = { version = "0.2", path = "../cheap-clone", default-features = false }
@@ -43,7 +43,7 @@ xxhash-rust = { version = "0.8", optional = true, default-features = false }
 bytes1 = { package = "bytes", version = "1", default-features = false, optional = true }
 smallvec01 = { package = "smallvec", version = "1", default-features = false, optional = true, features = ["const_generics"] }
 smallvec02 = { package = "smallvec", version = "2.0.0-alpha.7", default-features = false, optional = true }
-smallvec-wrapper01 = { package = "smallvec-wrapper", version = "0.1", optional = true, default-features = false, features = ["const_generics"] }
+smallvec-wrapper01 = { package = "smallvec-wrapper", version = "0.3", optional = true, default-features = false }
 smol_str03 = { package = "smol_str", version = "0.3", default-features = false, optional = true }
 faststr02 = { package = "faststr", version = "0.2", default-features = false, optional = true }
 
