@@ -125,13 +125,12 @@ impl core::fmt::Display for IncompleteBuffer {
 impl core::error::Error for IncompleteBuffer {}
 
 impl From<const_varint::EncodeError> for InsufficientBuffer {
-  fn from(_: const_varint::EncodeError) -> Self {
-    InsufficientBuffer::new()
+  fn from(e: const_varint::EncodeError) -> Self {
+    match e {
+      const_varint::EncodeError::Underflow { required, remaining } => {
+        InsufficientBuffer::with_information(required as u64, remaining as u64)
+      }
+    }
   }
 }
 
-// impl From<const_varint::DecodeError> for IncompleteBuffer {
-//   fn from(_: const_varint::DecodeError) -> Self {
-//     IncompleteBuffer::new()
-//   }
-// }
