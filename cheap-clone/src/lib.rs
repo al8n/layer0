@@ -34,7 +34,7 @@ macro_rules! impl_cheap_clone_for_copy {
 /// Eg:
 /// - ✔ [`Arc<T>`](std::sync::Arc)
 /// - ✔ [`Rc<T>`](std::rc::Rc)
-/// - ✔ [`Bytes`](bytes1::Bytes)
+/// - ✔ [`Bytes`](bytes_1::Bytes)
 /// - ✗ [`Vec<T>`](std::vec::Vec)
 /// - ✔ [`SmolStr`](smol_str03::SmolStr)
 /// - ✔ [`FastStr`](faststr02::FastStr)
@@ -46,25 +46,25 @@ pub trait CheapClone: Clone {
   }
 }
 
-#[cfg(feature = "bytes1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bytes1")))]
-impl CheapClone for bytes1::Bytes {}
+#[cfg(feature = "bytes_1")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bytes_1")))]
+impl CheapClone for bytes_1::Bytes {}
 
-#[cfg(feature = "smol_str03")]
-#[cfg_attr(docsrs, doc(cfg(feature = "smol_str03")))]
-impl CheapClone for smol_str03::SmolStr {}
+#[cfg(feature = "smol_str_0_3")]
+#[cfg_attr(docsrs, doc(cfg(feature = "smol_str_0_3")))]
+impl CheapClone for smol_str_0_3::SmolStr {}
 
-#[cfg(feature = "smol_str02")]
-#[cfg_attr(docsrs, doc(cfg(feature = "smol_str02")))]
-impl CheapClone for smol_str02::SmolStr {}
+#[cfg(feature = "smol_str_0_2")]
+#[cfg_attr(docsrs, doc(cfg(feature = "smol_str_0_2")))]
+impl CheapClone for smol_str_0_2::SmolStr {}
 
-#[cfg(feature = "faststr02")]
-#[cfg_attr(docsrs, doc(cfg(feature = "faststr02")))]
-impl CheapClone for faststr02::FastStr {}
+#[cfg(feature = "faststr_0_2")]
+#[cfg_attr(docsrs, doc(cfg(feature = "faststr_0_2")))]
+impl CheapClone for faststr_0_2::FastStr {}
 
-#[cfg(feature = "triomphe01")]
-#[cfg_attr(docsrs, doc(cfg(feature = "triomphe01")))]
-impl<T> CheapClone for triomphe01::Arc<T> {}
+#[cfg(feature = "triomphe_0_1")]
+#[cfg_attr(docsrs, doc(cfg(feature = "triomphe_0_1")))]
+impl<T> CheapClone for triomphe_0_1::Arc<T> {}
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 mod a {
@@ -164,7 +164,7 @@ impl<T> CheapClone for &T {
 }
 
 macro_rules! impl_cheap_clone_for_tuple {
-  ($($param:literal),+ $(,)?) => {
+  (@output $($param:literal),+ $(,)?) => {
     ::paste::paste! {
       impl<$([< T $param >]: CheapClone),+> CheapClone for ($([< T $param >],)+) {
         fn cheap_clone(&self) -> Self {
@@ -173,37 +173,21 @@ macro_rules! impl_cheap_clone_for_tuple {
       }
     }
   };
+  (@mid $($end:literal),+$(,)?) => {
+    $(
+      seq_macro::seq!(
+        N in 0..=$end {
+          impl_cheap_clone_for_tuple!(@output #(N,)*);
+        }
+      );
+    )*
+  };
+  ($end:literal) => {
+    seq_macro::seq!(N in 1..=$end {
+      impl_cheap_clone_for_tuple!(@mid N);
+    });
+  };
 }
 
-impl_cheap_clone_for_tuple!(0);
-impl_cheap_clone_for_tuple!(0, 1);
-impl_cheap_clone_for_tuple!(0, 1, 2);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18);
-impl_cheap_clone_for_tuple!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
-impl_cheap_clone_for_tuple!(
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-);
-impl_cheap_clone_for_tuple!(
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
-);
-impl_cheap_clone_for_tuple!(
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
-);
-impl_cheap_clone_for_tuple!(
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-);
+impl_cheap_clone_for_tuple!(@output 0);
+impl_cheap_clone_for_tuple!(96);

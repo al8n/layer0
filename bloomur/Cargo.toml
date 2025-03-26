@@ -20,7 +20,7 @@ xxhash32 = ["xxhash-rust/xxh32"]
 xxhash3 = ["xxhash-rust/xxh3"]
 
 [dependencies]
-smallvec = { version = "1.13", default-features = false, optional = true, features = ["const_new"] }
+smallvec = { version = "1", default-features = false, optional = true, features = ["const_new"] }
 xxhash-rust = { version = "0.8", optional = true, default-features = false }
 
 
@@ -28,9 +28,9 @@ libm = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 divan = "0.1"
-rand = "0.8"
+rand = "0.9"
 bloomfilter = "3"
-fastbloom = "0.8"
+fastbloom = "0.9"
 fastbloom-rs = "0.5"
 
 [[bench]]

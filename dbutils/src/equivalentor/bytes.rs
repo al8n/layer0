@@ -113,8 +113,8 @@ const _: () = {
 
   impl_traits!(std::sync::Arc<C>, std::rc::Rc<C>);
 
-  #[cfg(feature = "triomphe01")]
-  impl_traits!(triomphe01::Arc<C>);
+  #[cfg(feature = "triomphe_0_1")]
+  impl_traits!(triomphe_0_1::Arc<C>);
 };
 
 impl<C> BytesEquivalentor for Reverse<C>

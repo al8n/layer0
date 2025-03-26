@@ -21,7 +21,7 @@ A trait which indicates that such type can be cloned cheaply.
 
 ```toml
 [dependencies]
-cheap-clone = "0.1"
+cheap-clone = "0.3"
 ```
 
 #### License
@@ -31,7 +31,7 @@ Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT) for details.
 
-Copyright (c) 2023 Al Liu.
+Copyright (c) 2025 Al Liu.
 
 [Github-url]: https://github.com/al8n/layer0/tree/main/cheap-clone
 [CI-url]: https://github.com/al8n/layer0/actions/workflows/cheap_clone.yml

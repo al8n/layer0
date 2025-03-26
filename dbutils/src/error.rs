@@ -1,3 +1,5 @@
+pub use const_varint::{DecodeError, EncodeError};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Information {
   required: u64,
@@ -123,14 +125,3 @@ impl core::fmt::Display for IncompleteBuffer {
 }
 
 impl core::error::Error for IncompleteBuffer {}
-
-impl From<const_varint::EncodeError> for InsufficientBuffer {
-  fn from(e: const_varint::EncodeError) -> Self {
-    match e {
-      const_varint::EncodeError::Underflow { required, remaining } => {
-        InsufficientBuffer::with_information(required as u64, remaining as u64)
-      }
-    }
-  }
-}
-

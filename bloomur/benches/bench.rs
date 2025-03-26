@@ -6,9 +6,10 @@ use bloomur::{bits_per_key, Filter};
 use bloomur::hasher::Xxh32;
 
 use fastbloom_rs::Membership;
-use rand::{thread_rng, RngCore};
+use rand::{rng, RngCore};
 
 use divan::Bencher;
+use xxhash_rust::xxh3::Xxh3Builder;
 
 fn main() {
   // Run registered benchmarks.
@@ -21,7 +22,7 @@ fn keys() -> Vec<Vec<u8>> {
 
   (0..NUM)
     .map(|_| {
-      let mut rng = thread_rng();
+      let mut rng = rng();
       let mut k = std::vec![0; LEN];
       rng.fill_bytes(&mut k);
       k
@@ -101,7 +102,9 @@ fn bloomfilter(bencher: Bencher) {
 #[divan::bench]
 fn fastbloom(bencher: Bencher) {
   bencher.with_inputs(keys).bench_local_values(|keys| {
-    let mut f = fastbloom::BloomFilter::with_false_pos(0.001).expected_items(100000);
+    let mut f = fastbloom::BloomFilter::with_false_pos(0.001)
+      .hasher(Xxh3Builder::new())
+      .expected_items(100000);
 
     for k in keys.iter() {
       f.insert(k);

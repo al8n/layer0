@@ -6,7 +6,7 @@ members = [
   "indexsort", "snapshotor",
   "waterark",
 ]
-resolver = "2"
+resolver = "3"
 
 [workspace.package]
 repository = "https://github.com/al8n/layer0"
@@ -18,7 +18,7 @@ license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 equivalent-flipped = "1"
-dbutils = { version = "0.14", path = "./dbutils", default-features = false }
+dbutils = { version = "0.15", path = "./dbutils", default-features = false }
 
 [workspace.package.metadata.docs.rs]
 all-features = true
