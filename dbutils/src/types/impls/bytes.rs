@@ -221,31 +221,31 @@ impls! {
   ::std::boxed::Box<[u8]>,
   #[cfg(feature = "alloc")]
   ::std::sync::Arc<[u8]>,
-  #[cfg(feature = "triomphe01")]
-  ::triomphe01::Arc<[u8]>,
-  #[cfg(feature = "bytes1")]
-  ::bytes1::Bytes,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::OneOrMore<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::TinyVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::TriVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::SmallVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::MediumVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::LargeVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::XLargeVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::XXLargeVec<u8>,
-  #[cfg(feature = "smallvec-wrapper01")]
-  ::smallvec_wrapper01::XXXLargeVec<u8>,
+  #[cfg(feature = "triomphe_0_1")]
+  ::triomphe_0_1::Arc<[u8]>,
+  #[cfg(feature = "bytes_1")]
+  ::bytes_1::Bytes,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::OneOrMore<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::TinyVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::TriVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::SmallVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::MediumVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::LargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::XLargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::XXLargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_3")]
+  ::smallvec_wrapper_0_3::XXXLargeVec<u8>,
 }
 
-#[cfg(any(feature = "smallvec01", feature = "smallvec02"))]
+#[cfg(any(feature = "smallvec_1", feature = "smallvec_2"))]
 macro_rules! smallvec {
   ($pkg:ident::$ty:ty) => {
     const _: () = {
@@ -284,8 +284,8 @@ macro_rules! smallvec {
   };
 }
 
-#[cfg(feature = "smallvec01")]
-smallvec!(smallvec01::SmallVec<[u8; N]>);
+#[cfg(feature = "smallvec_1")]
+smallvec!(smallvec_1::SmallVec<[u8; N]>);
 
-#[cfg(feature = "smallvec02")]
-smallvec!(smallvec02::SmallVec<u8, N>);
+#[cfg(feature = "smallvec_2")]
+smallvec!(smallvec_2::SmallVec<u8, N>);

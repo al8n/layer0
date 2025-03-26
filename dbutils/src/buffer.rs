@@ -154,11 +154,11 @@ macro_rules! impl_put_varint {
     $(
       paste::paste! {
         #[doc = "Encodes an `" $ty "`value into LEB128 variable length format, and writes it to the buffer."]
-        pub fn [< put_ $ty _varint >](&mut self, value: $ty) -> Result<usize, $crate::error::InsufficientBuffer> {
+        pub fn [< put_ $ty _varint >](&mut self, value: $ty) -> Result<usize, $crate::error::EncodeError> {
           let len = [< encoded_ $ty _varint_len >](value);
           let remaining = self.cap - self.len;
           if len > remaining {
-            return Err($crate::error::InsufficientBuffer::with_information(len as u64, remaining as u64));
+            return Err($crate::error::EncodeError::underflow(len, remaining));
           }
 
           // SAFETY: the value's ptr is aligned and the cap is the correct.
