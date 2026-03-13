@@ -12,7 +12,12 @@ rust-version = "1.85.0"
 [dependencies]
 
 [dev-dependencies]
+divan = "0.1"
 rand = "0.10"
+
+[[bench]]
+name = "sort"
+harness = false
 
 [package.metadata.docs.rs]
 all-features = true
