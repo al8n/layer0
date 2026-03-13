@@ -5,12 +5,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
 
-#[cfg(feature = "std")]
-extern crate std;
-
-#[cfg(all(not(feature = "std"), feature = "alloc"))]
-extern crate alloc as std;
-
 struct LessSwap<'a, T, L: ?Sized> {
   data: &'a mut [T],
   less: L,
@@ -89,51 +83,6 @@ where
     let src: &mut [T] = self;
     src.swap(i, j);
   }
-}
-
-/// Golang's `sort.Slice`, `sort.SliceStable` and `sort.SliceIsSorted` in Rust
-pub trait SliceExt {
-  /// Item
-  type Item;
-
-  /// Slice sorts the slice x given the provided less function.
-  ///
-  /// The sort is not guaranteed to be stable: equal elements
-  /// may be reversed from their original order.
-  /// For a stable sort, use `slice_stable`.
-  #[inline]
-  fn sort_slice<L>(data: &mut [Self::Item], less: L)
-  where
-    L: Fn(&[Self::Item], usize, usize) -> bool,
-  {
-    let mut sorter = LessSwap { data, less };
-    sorter.sort()
-  }
-
-  /// Sorts the slice data using the provided less
-  /// function, keeping equal elements in their original order.
-  #[inline]
-  fn sort_slice_stable<L>(data: &mut [Self::Item], less: L)
-  where
-    L: Fn(&[Self::Item], usize, usize) -> bool,
-  {
-    let mut sorter = LessSwap { data, less };
-    sorter.sort_stable()
-  }
-
-  /// Returns whether the slice x is sorted according to the provided less function.
-  #[inline]
-  fn slice_is_sorted<L>(data: &[Self::Item], less: L) -> bool
-  where
-    L: Fn(usize, usize) -> bool,
-  {
-    let sorter = ImmutableLessSwap { data, less };
-    sorter.is_sorted()
-  }
-}
-
-impl<T> SliceExt for T {
-  type Item = T;
 }
 
 /// Slice sorts the slice x given the provided less function.
@@ -230,7 +179,7 @@ pub trait SearchableExt: Searchable {
   #[inline]
   fn is_sorted(&self) -> bool {
     let n = self.len();
-    for i in (1..n).rev() {
+    for i in 1..n {
       if self.less(i, i - 1) {
         return false;
       }
@@ -242,7 +191,7 @@ pub trait SearchableExt: Searchable {
   #[inline]
   fn is_reverse_sorted(&self) -> bool {
     let n = self.len();
-    for i in (1..n).rev() {
+    for i in 1..n {
       if self.less(i - 1, i) {
         return false;
       }
@@ -318,36 +267,7 @@ pub trait SortableExt: Sortable {
     quick_sort(&mut Reverse(self), 0, n, max_depth(n));
   }
 
-  /// Sorts (stable) data in reverse order.
-  ///  
-  /// Notes on stable sorting:
-  /// The used algorithms are simple and provable correct on all input and use
-  /// only logarithmic additional stack space. They perform well if compared
-  /// experimentally to other stable in-place sorting algorithms.
-  ///
-  /// Remarks on other algorithms evaluated:
-  ///  - GCC's 4.6.3 stable_sort with merge_without_buffer from libstdc++:
-  ///    Not faster.
-  ///  - GCC's __rotate for block rotations: Not faster.
-  ///  - "Practical in-place mergesort" from  Jyrki Katajainen, Tomi A. Pasanen
-  ///    and Jukka Teuhola; Nordic Journal of Computing 3,1 (1996), 27-40:
-  ///    The given algorithms are in-place, number of Swap and Assignments
-  ///    grow as n log n but the algorithm is not stable.
-  ///  - "Fast Stable In-Place Sorting with O(n) Data Moves" J.I. Munro and
-  ///    V. Raman in Algorithmica (1996) 16, 115-160:
-  ///    This algorithm either needs additional 2n bits or works only if there
-  ///    are enough different elements available to encode some permutations
-  ///    which have to be undone later (so not stable on any input).
-  ///  - All the optimal in-place sorting/merging algorithms I found are either
-  ///    unstable or rely on enough different elements in each step to encode the
-  ///    performed block rearrangements. See also "In-Place Merging Algorithms",
-  ///    Denham Coates-Evely, Department of Computer Science, Kings College,
-  ///    January 2004 and the references in there.
-  ///  - Often "optimal" algorithms are optimal in the number of assignments
-  ///    but Interface has only Swap as operation.
-  ///
-  /// Stable sorts data in ascending order as determined by the Less method,
-  /// while keeping the original order of equal elements.
+  /// Sorts (stable) data in reverse (descending) order.
   ///
   /// It makes one call to data.Len to determine n, O(n*log(n)) calls to
   /// data.Less and O(n*log(n)*log(n)) calls to data.Swap.
@@ -451,7 +371,7 @@ fn swap_range(data: &mut (impl Sortable + ?Sized), a: usize, b: usize, n: usize)
 
 #[inline]
 fn do_pivot(data: &mut (impl Sortable + ?Sized), lo: usize, hi: usize) -> (usize, usize) {
-  let m = (lo + hi) >> 1;
+  let m = lo + (hi - lo) / 2;
   if hi - lo > 40 {
     // Tukey ninther, median of three medians of three
     let s = (hi - lo) / 8;
@@ -646,7 +566,7 @@ fn syn_merge(data: &mut (impl Sortable + ?Sized), a: usize, m: usize, b: usize) 
     let mut i = m;
     let mut j = b;
     while i < j {
-      let h = (i + j) >> 1;
+      let h = i + (j - i) / 2;
       if data.less(h, a) {
         i = h + 1;
       } else {
@@ -671,7 +591,7 @@ fn syn_merge(data: &mut (impl Sortable + ?Sized), a: usize, m: usize, b: usize) 
     let mut i = a;
     let mut j = m;
     while i < j {
-      let h = (i + j) >> 1;
+      let h = i + (j - i) / 2;
       if !data.less(m, h) {
         i = h + 1;
       } else {
@@ -688,13 +608,13 @@ fn syn_merge(data: &mut (impl Sortable + ?Sized), a: usize, m: usize, b: usize) 
     return;
   }
 
-  let mid = (a + b) >> 1;
+  let mid = a + (b - a) / 2;
   let n = mid + m;
   let (mut start, mut r) = if m > mid { (n - b, mid) } else { (a, m) };
 
   let p = n - 1;
   while start < r {
-    let c = (start + r) >> 1;
+    let c = start + (r - start) / 2;
     if !data.less(p - c, c) {
       start = c + 1;
     } else {
@@ -791,7 +711,7 @@ where
   let mut i = 0;
   let mut j = n;
   while i < j {
-    let h = (i + j) >> 1;
+    let h = i + (j - i) / 2;
     if !f(h) {
       i = h + 1;
     } else {
