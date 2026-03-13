@@ -6,7 +6,7 @@ use bloomur::{bits_per_key, Filter};
 use bloomur::hasher::Xxh32;
 
 use fastbloom_rs::Membership;
-use rand::{rng, RngCore};
+use rand::{rng, Rng};
 
 use divan::Bencher;
 use xxhash_rust::xxh3::Xxh3Builder;

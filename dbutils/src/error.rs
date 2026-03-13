@@ -1,4 +1,4 @@
-pub use const_varint::{DecodeError, EncodeError};
+pub use varing::{DecodeError, EncodeError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Information {
@@ -50,7 +50,7 @@ impl core::fmt::Display for InsufficientBuffer {
       Some(ref info) => {
         write!(
           f,
-          "incomplete buffer data: expected {} bytes for decoding, but only {} bytes were available",
+          "insufficient buffer: expected {} bytes for encoding, but only {} bytes were available",
           info.required, info.remaining
         )
       }

@@ -21,7 +21,7 @@ Yet another sort crate, porting Golang sort package to Rust.
 ## Installation
 ```toml
 [dependencies]
-indexsort = "0.1"
+indexsort = "0.3"
 ```
 
 ## Example
@@ -49,7 +49,7 @@ shall be dual licensed as above, without any additional terms or conditions.
 
 
 [Github-url]: https://github.com/al8n/layer0/
-[CI-url]: https://github.com/al8n/indexsort/actions/workflows/ci.yml
+[CI-url]: https://github.com/al8n/layer0/actions/workflows/indexsort.yml
 [doc-url]: https://docs.rs/indexsort
 [crates-url]: https://crates.io/crates/indexsort
-[codecov-url]: https://app.codecov.io/gh/al8n/indexsort/
+[codecov-url]: https://app.codecov.io/gh/al8n/layer0/

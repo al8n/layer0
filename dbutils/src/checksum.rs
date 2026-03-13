@@ -174,7 +174,7 @@ const _: () = {
   impl super::CheapClone for XxHash64 {}
 };
 
-/// XxHash64 (with xxh3 support) checksumer.
+/// XxHash3 checksumer.
 #[cfg(feature = "xxhash3")]
 #[cfg_attr(docsrs, doc(cfg(feature = "xxhash3")))]
 #[derive(Default, Clone)]
@@ -186,7 +186,7 @@ pub struct XxHash3 {
 #[cfg(feature = "xxhash3")]
 const _: () = {
   impl XxHash3 {
-    /// Create a new XxHash64 with seed 0.
+    /// Create a new XxHash3 with seed 0.
     #[inline]
     pub const fn new() -> Self {
       Self {
@@ -195,7 +195,7 @@ const _: () = {
       }
     }
 
-    /// Create a new XxHash64 with a seed.
+    /// Create a new XxHash3 with a seed.
     #[inline]
     pub fn with_seed(seed: u64) -> Self {
       Self {

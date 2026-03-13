@@ -1,9 +1,7 @@
-#![allow(warnings)]
+use std::cell::Cell;
 
-use std::cell::{Cell, RefCell};
-
-use indexsort::{Searchable, SearchableExt, SliceExt, Sortable, SortableExt};
-use rand::Rng;
+use indexsort::{Searchable, SearchableExt, Sortable, SortableExt};
+use rand::RngExt;
 
 const INTS: &[isize] = &[
   74, 59, 238, -784, 9845, 959, 905, 0, 0, 42, 7586, -5467984, 7586,
@@ -18,7 +16,7 @@ const FLOATS: &[f64] = &[
   2.3,
   f64::NAN,
   f64::NAN,
-  f64::INFINITY * -1f64,
+  -f64::INFINITY,
   9845.768,
   -959.7485,
   905f64,
@@ -62,31 +60,33 @@ fn test_sort_string_slice() {
 }
 
 #[test]
-fn test_slice() {
+fn test_slice_functions() {
   let mut data = STRINGS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
 
-  String::sort_slice(&mut data, |d, i, j| d[i] < d[j]);
+  indexsort::sort_slice(&mut data, |d, i, j| d[i] < d[j]);
 
-  assert!(String::slice_is_sorted(&data, |i, j| { data[i] < data[j] }));
+  assert!(indexsort::slice_is_sorted(&data, |i, j| {
+    data[i] < data[j]
+  }));
 
   let mut data = STRINGS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
 
-  String::sort_slice_stable(&mut data, |d, i, j| d[i] < d[j]);
+  indexsort::sort_slice_stable(&mut data, |d, i, j| d[i] < d[j]);
 
-  assert!(String::slice_is_sorted(&data, |i, j| { data[i] < data[j] }));
+  assert!(indexsort::slice_is_sorted(&data, |i, j| {
+    data[i] < data[j]
+  }));
 }
 
 #[test]
 fn test_sort_large_random() {
-  let mut data = (0..1000000)
-    .map(|_| rand::random::<isize>())
-    .collect::<Vec<_>>();
+  let mut rng = rand::rng();
+
+  let mut data: Vec<i64> = (0..1000000).map(|_| rng.random()).collect();
   SortableExt::sort(&mut data);
   assert!(SearchableExt::is_sorted(&data));
 
-  let mut data = (0..1000000)
-    .map(|_| rand::random::<isize>())
-    .collect::<Vec<_>>();
+  let mut data: Vec<i64> = (0..1000000).map(|_| rng.random()).collect();
   SortableExt::sort_stable(&mut data);
   assert!(SearchableExt::is_sorted(&data));
 }
@@ -119,7 +119,7 @@ impl Searchable for NonDeterministicTestingData {
       panic!("nondeterministic comparison out of bounds")
     }
 
-    rand::thread_rng().gen_range(0f32..1f32) < 0.5f32
+    rand::rng().random::<f32>() < 0.5f32
   }
 }
 
@@ -165,6 +165,7 @@ impl From<usize> for Distribution {
 
 #[derive(Copy, Clone)]
 #[repr(u8)]
+#[allow(clippy::enum_variant_names)]
 enum Mode {
   Copy,
   Reverse,
@@ -226,6 +227,7 @@ impl Sortable for TestingData {
   }
 }
 
+#[allow(clippy::needless_range_loop)]
 fn test_bentley_mc_ilroy<S, M>(sort: S, maxswap: M)
 where
   S: Fn(&mut TestingData),
@@ -237,6 +239,7 @@ where
 
   let tmp1 = [0; 1025];
   let tmp2 = [0; 1025];
+  let mut rng = rand::rng();
   for n in sizes {
     let mut m = 1;
     while m < 2 * n {
@@ -250,7 +253,7 @@ where
               data[i] = i % m;
             }
             Distribution::Rand => {
-              data[i] = rand::thread_rng().gen_range(0..m);
+              data[i] = rng.random_range(0..m as u32) as usize;
             }
             Distribution::Stagger => {
               data[i] = (i * m + i) % n;
@@ -259,7 +262,7 @@ where
               data[i] = i.min(m);
             }
             Distribution::Shuffle => {
-              let v = rand::thread_rng().gen_range(0..m);
+              let v = rng.random_range(0..m as u32) as usize;
               if v != 0 {
                 j += 2;
                 data[i] = j;
@@ -320,17 +323,6 @@ where
           };
           sort(&mut d);
 
-          // Uncomment if you are trying to improve the number of compares/swaps.
-          //t.Logf("%s: ncmp=%d, nswp=%d", desc, d.ncmp, d.nswap)
-
-          // If we were testing C qsort, we'd have to make a copy
-          // of the slice and sort it ourselves and then compare
-          // x against it, to ensure that qsort was only permuting
-          // the data, not (for example) overwriting it with zeros.
-          //
-          // In go, we don't have to be so paranoid: since the only
-          // mutating method Sort can call is TestingData.swap,
-          // it suffices here just to check that the final slice is sorted.
           assert!(
             d.data.is_sorted(),
             "{}: data not sorted {:?}",
@@ -376,7 +368,7 @@ fn test_stable_bm() {
 // See https://www.cs.dartmouth.edu/~doug/mdmspe.pdf for more info.
 struct AdversaryTestingData {
   /// item values, initialized to special gas value and changed by Less
-  data: RefCell<Vec<usize>>,
+  data: std::cell::RefCell<Vec<usize>>,
   /// number of comparisons allowed
   maxcmp: usize,
   /// number of comparisons (calls to Less)
@@ -439,7 +431,7 @@ impl AdversaryTestingData {
     let gas = size - 1;
     let data = vec![gas; size];
     AdversaryTestingData {
-      data: RefCell::new(data),
+      data: std::cell::RefCell::new(data),
       maxcmp,
       ncmp: Cell::new(0),
       nsolid: Cell::new(0),
@@ -462,7 +454,7 @@ fn test_adversary() {
   data.sort();
   // Check data is fully populated and sorted.
   for (i, v) in data.data.borrow().iter().enumerate() {
-    assert_eq!(*v, i, "dversary data not fully sorted");
+    assert_eq!(*v, i, "adversary data not fully sorted");
   }
 }
 
@@ -501,7 +493,7 @@ impl Sortable for Pairs {
 
 impl Pairs {
   fn init_b(&mut self) {
-    for (i, mut p) in self.data.iter_mut().enumerate() {
+    for (i, p) in self.data.iter_mut().enumerate() {
       p.b = i as isize;
     }
   }
@@ -527,13 +519,14 @@ impl Pairs {
 fn test_stability() {
   const N: usize = 100_000;
   const M: usize = 1000;
+  let mut rng = rand::rng();
   let mut data = Pairs {
     data: vec![Pair { a: 0, b: 0 }; N],
   };
 
   // random distribution
   for i in 0..N {
-    data.data[i].a = rand::thread_rng().gen_range(0..M as isize);
+    data.data[i].a = rng.random_range(0..M as i32) as isize;
   }
 
   assert!(!data.is_sorted(), "terrible rand");
@@ -572,6 +565,7 @@ fn count_ops<F>(f: F, name: &'static str)
 where
   F: Fn(&mut TestingData),
 {
+  let mut rng = rand::rng();
   for n in COUNT_OPS_SIZES.iter() {
     let mut td = TestingData {
       desc: name.to_string(),
@@ -581,7 +575,7 @@ where
       nswap: 0,
     };
     for i in 0..*n {
-      td.data[i] = rand::thread_rng().gen_range(0..*n / 5);
+      td.data[i] = rng.random_range(0..(*n / 5) as u32) as usize;
     }
     f(&mut td);
     eprintln!(

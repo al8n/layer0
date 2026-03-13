@@ -1,4 +1,4 @@
-#![allow(warnings)]
+use std::cell::Cell;
 
 use indexsort::search;
 
@@ -173,11 +173,12 @@ fn test_search_efficiency() {
   for _ in 2..10 {
     let max = log2(n);
     for x in (0..n).step_by(step) {
-      let mut count = 0;
-      let i = search(n, move |i| {
-        count += 1;
+      let count = Cell::new(0);
+      let i = search(n, |i| {
+        count.set(count.get() + 1);
         i >= x
       });
+      let count = count.get();
       assert_eq!(i, x, "n = {}: expected index {}; got {}", n, x, i);
       assert!(
         count <= max,

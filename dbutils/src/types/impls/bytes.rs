@@ -243,6 +243,25 @@ impls! {
   ::smallvec_wrapper_0_3::XXLargeVec<u8>,
   #[cfg(feature = "smallvec-wrapper_0_3")]
   ::smallvec_wrapper_0_3::XXXLargeVec<u8>,
+
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::OneOrMore<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::TinyVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::TriVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::SmallVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::MediumVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::LargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::XLargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::XXLargeVec<u8>,
+  #[cfg(feature = "smallvec-wrapper_0_4")]
+  ::smallvec_wrapper_0_4::XXXLargeVec<u8>,
 }
 
 #[cfg(any(feature = "smallvec_1", feature = "smallvec_2"))]
