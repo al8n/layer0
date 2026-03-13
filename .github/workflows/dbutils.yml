@@ -13,6 +13,9 @@ on:
       - 'dbutils/src/**'
       - 'dbutils/tests/**'
       - 'dbutils/Cargo.toml'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 */30 * *' # every 30 days at midnight
 
 env:
   CARGO_TERM_COLOR: always
