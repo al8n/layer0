@@ -1,6 +1,6 @@
 [package]
 name = "dbutils"
-version = "0.15.0"
+version = "0.16.0"
 repository = "https://github.com/al8n/layer0/tree/main/dbutils"
 edition.workspace = true
 rust-version = "1.81.0"
@@ -13,7 +13,7 @@ categories = ["data-structures", "database-implementations", "development-tools"
 [features]
 default = ["std", "cheap-clone/default"]
 alloc = ["cheap-clone/alloc"]
-std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std", "triomphe_0_1?/std", "const-varint/default"]
+std = ["alloc", "cheap-clone/std", "crc32fast?/std", "either/default", "xxhash-rust?/std", "triomphe_0_1?/std", "varing/default"]
 
 among = ["cheap-clone/among"]
 bytes_1 = ["dep:bytes_1", "cheap-clone/bytes_1"]
@@ -22,14 +22,13 @@ smol_str_0_3 = ["dep:smol_str_0_3", "cheap-clone/smol_str_0_3"]
 faststr_0_2 = ["dep:faststr_0_2", "cheap-clone/faststr_0_2"]
 triomphe_0_1 = ["dep:triomphe_0_1", "cheap-clone/triomphe_0_1"]
 
-
 crc32 = ["crc32fast"]
 xxhash64 = ["xxhash-rust/xxh64"]
 xxhash3 = ["xxhash-rust/xxh3"]
 
 
 [dependencies]
-const-varint = { version = "0.4", default-features = false }
+varing = { version = "0.11", default-features = false }
 equivalent-flipped.workspace = true
 either = { version = "1", default-features = false }
 cheap-clone = { version = "0.3", path = "../cheap-clone", default-features = false }
@@ -44,13 +43,14 @@ bytes_1 = { package = "bytes", version = "1", default-features = false, optional
 smallvec_1 = { package = "smallvec", version = "1", default-features = false, optional = true, features = ["const_generics"] }
 smallvec_2 = { package = "smallvec", version = "2.0.0-alpha.7", default-features = false, optional = true }
 smallvec-wrapper_0_3 = { package = "smallvec-wrapper", version = "0.3", optional = true, default-features = false }
+smallvec-wrapper_0_4 = { package = "smallvec-wrapper", version = "0.4", optional = true, default-features = false }
 smol_str_0_3 = { package = "smol_str", version = "0.3", default-features = false, optional = true }
 faststr_0_2 = { package = "faststr", version = "0.2", default-features = false, optional = true }
 
 tracing = { version = "0.1", default-features = false, optional = true }
 
 [dev-dependencies]
-rstest = "0.25"
+rstest = "0.26"
 quickcheck = "1"
 quickcheck_macros = "1"
 proptest = "1"

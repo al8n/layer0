@@ -1,4 +1,4 @@
-pub use const_varint::{
+pub use varing::{
   decode_duration, decode_i128_varint, decode_i16_varint, decode_i32_varint, decode_i64_varint,
   decode_u128_varint, decode_u16_varint, decode_u32_varint, decode_u64_varint, encode_duration,
   encode_duration_to, encode_i128_varint, encode_i128_varint_to, encode_i16_varint,

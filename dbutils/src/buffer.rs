@@ -3,6 +3,7 @@ use core::{
   borrow::{Borrow, BorrowMut},
   marker::PhantomData,
   mem,
+  num::NonZeroUsize,
   ptr::{self, NonNull},
   slice,
 };
@@ -119,13 +120,13 @@ macro_rules! impl_get_varint {
         ///
         /// # Returns
         ///
-        #[doc = "* Returns the bytes readed and the decoded value as `" $ty "` if successful."]
+        #[doc = "* Returns the bytes read and the decoded value as `" $ty "` if successful."]
         ///
         /// * Returns [`DecodeVarintError`] if the buffer did not contain a valid LEB128 encoding
         ///   or the decode buffer did not contain enough bytes to decode a value.
         #[inline]
-        pub fn [< get_ $ty _varint >](&self) -> Result<(usize, $ty), DecodeVarintError> {
-          [< decode_ $ty _varint >](self.as_ref())
+        pub fn [< get_ $ty _varint >](&self) -> Result<(NonZeroUsize, $ty), DecodeVarintError> {
+          [< decode_ $ty _varint >](self.as_ref()).map_err(Into::into)
         }
 
         /// Decodes a value from LEB128 variable length format.
@@ -136,12 +137,12 @@ macro_rules! impl_get_varint {
         ///
         /// # Returns
         ///
-        #[doc = "* Returns the bytes readed and the decoded value as `" $ty "` if successful, otherwise panic."]
+        #[doc = "* Returns the bytes read and the decoded value as `" $ty "` if successful, otherwise panic."]
         ///
         /// # Panics
         /// - If the buffer did not contain a valid LEB128 encoding or the decode buffer did not contain enough bytes to decode a value.
         #[inline]
-        pub fn [< get_ $ty _varint_unchecked >](&self) -> (usize, $ty) {
+        pub fn [< get_ $ty _varint_unchecked >](&self) -> (NonZeroUsize, $ty) {
           [< decode_ $ty _varint >](self.as_ref()).unwrap()
         }
       }
@@ -154,17 +155,19 @@ macro_rules! impl_put_varint {
     $(
       paste::paste! {
         #[doc = "Encodes an `" $ty "`value into LEB128 variable length format, and writes it to the buffer."]
-        pub fn [< put_ $ty _varint >](&mut self, value: $ty) -> Result<usize, $crate::error::EncodeError> {
+        pub fn [< put_ $ty _varint >](&mut self, value: $ty) -> Result<NonZeroUsize, $crate::error::EncodeError> {
           let len = [< encoded_ $ty _varint_len >](value);
           let remaining = self.cap - self.len;
-          if len > remaining {
-            return Err($crate::error::EncodeError::underflow(len, remaining));
+          if len.get() > remaining {
+            return Err($crate::error::EncodeError::insufficient_space(len, remaining));
           }
+
+          let len = len.get();
 
           // SAFETY: the value's ptr is aligned and the cap is the correct.
           unsafe {
             let slice = slice::from_raw_parts_mut(self.value.as_ptr().add(self.len), len);
-            const_varint::Varint::encode(&value, slice).map_err(Into::into).inspect(|_| {
+            varing::Varint::encode(&value, slice).map_err(Into::into).inspect(|_| {
               self.len += len;
             })
           }
@@ -174,8 +177,8 @@ macro_rules! impl_put_varint {
         ///
         /// # Panics
         #[doc = "- If the buffer does not have enough space to hold the encoded `" $ty "` in LEB128 format."]
-        pub fn [< put_ $ty _varint_unchecked >](&mut self, value: $ty) -> usize {
-          let len = [< encoded_ $ty _varint_len >](value);
+        pub fn [< put_ $ty _varint_unchecked >](&mut self, value: $ty) -> NonZeroUsize {
+          let len = [< encoded_ $ty _varint_len >](value).get();
           let remaining = self.cap - self.len;
           if len > remaining {
             panic!(
@@ -187,7 +190,7 @@ macro_rules! impl_put_varint {
           // SAFETY: the value's ptr is aligned and the cap is the correct.
           unsafe {
             let slice = slice::from_raw_parts_mut(self.value.as_ptr().add(self.len), len);
-            const_varint::Varint::encode(&value, slice).inspect(|_| {
+            varing::Varint::encode(&value, slice).inspect(|_| {
               self.len += len;
             }).unwrap()
           }
@@ -317,13 +320,14 @@ impl VacantBuffer<'_> {
   /// Fill the remaining space with the given byte.
   #[inline]
   pub fn fill(&mut self, byte: u8) {
-    if self.cap == 0 {
+    let remaining = self.cap - self.len;
+    if remaining == 0 {
       return;
     }
 
     // SAFETY: the value's ptr is aligned and the cap is the correct.
     unsafe {
-      ptr::write_bytes(self.value.as_ptr(), byte, self.cap);
+      ptr::write_bytes(self.value.as_ptr().add(self.len), byte, remaining);
     }
     self.len = self.cap;
   }
@@ -352,7 +356,7 @@ impl VacantBuffer<'_> {
       at <= self.cap,
       "split_to out of bounds: {:?} <= {:?}",
       at,
-      self.len,
+      self.cap,
     );
 
     let new = unsafe { VacantBuffer::new(self.cap - at, self.value.add(at)) };
@@ -393,7 +397,7 @@ impl VacantBuffer<'_> {
       at <= self.cap,
       "split_off out of bounds: {:?} <= {:?}",
       at,
-      self.len,
+      self.cap,
     );
 
     let mut new = unsafe { VacantBuffer::new(self.cap - at, self.value.add(at)) };
