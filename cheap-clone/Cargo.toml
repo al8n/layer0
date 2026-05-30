@@ -1,13 +1,13 @@
 [package]
 name = "cheap-clone"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 repository = "https://github.com/al8n/layer0/tree/main/cheap-clone"
 homepage = "https://github.com/al8n/layer0/tree/main/cheap-clone"
 documentation = "https://docs.rs/cheap-clone"
 description = "A trait which indicates that such type can be cloned cheaply."
 license = "MIT OR Apache-2.0"
-rust-version = "1.56.0"
+rust-version = "1.77.0"
 
 [features]
 default = ["std"]

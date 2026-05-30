@@ -74,21 +74,18 @@ mod a {
   impl<T: ?Sized> CheapClone for std::sync::Arc<T> {}
 }
 
-#[cfg(feature = "std")]
-mod s {
-  use super::CheapClone;
+impl<T: CheapClone> CheapClone for core::pin::Pin<T> {}
 
-  impl<T: CheapClone> CheapClone for std::pin::Pin<T> {}
-
-  impl_cheap_clone_for_copy!(
-    std::net::IpAddr,
-    std::net::Ipv4Addr,
-    std::net::Ipv6Addr,
-    std::net::SocketAddr,
-    std::net::SocketAddrV4,
-    std::net::SocketAddrV6,
-  );
-}
+// `core::net` types are `Copy` and live in `core` (since Rust 1.77), so these
+// impls are available on `no_std` targets, not just `std`.
+impl_cheap_clone_for_copy!(
+  core::net::IpAddr,
+  core::net::Ipv4Addr,
+  core::net::Ipv6Addr,
+  core::net::SocketAddr,
+  core::net::SocketAddrV4,
+  core::net::SocketAddrV6,
+);
 
 impl<T: CheapClone> CheapClone for core::cmp::Reverse<T> {
   #[inline]
