@@ -28,7 +28,7 @@ xxhash3 = ["xxhash-rust/xxh3"]
 
 
 [dependencies]
-varing = { version = "0.12", default-features = false }
+varing = { version = "0.13", default-features = false }
 equivalent-flipped.workspace = true
 either = { version = "1", default-features = false }
 cheap-clone = { version = "0.3", path = "../cheap-clone", default-features = false }
