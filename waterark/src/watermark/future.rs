@@ -60,18 +60,16 @@ impl<S: AsyncSpawner> Inner<S> {
       let mut pending = pending.borrow_mut();
       let mut waiters = waiters.borrow_mut();
 
-      if !pending.contains_key(&idx) {
-        indices.push(Reverse(idx));
-      }
-
-      let mut delta = 1;
+      let entry = pending.entry(idx).or_insert(0);
       if done {
-        delta = -1;
+        *entry -= 1;
+      } else {
+        if *entry <= 0 {
+          // Only queue the index when a begin arrives, so spurious done calls do not advance progress.
+          indices.push(Reverse(idx));
+        }
+        *entry += 1;
       }
-      pending
-        .entry(idx)
-        .and_modify(|v| *v += delta)
-        .or_insert(delta);
 
       // Update mark by going through all indices in order; and checking if they have
       // been done. Stop at the first index, which isn't done.
@@ -295,10 +293,17 @@ impl<S: AsyncSpawner> AsyncWaterMark<S> {
   /// Sets the maximum index that has the property that all indices
   /// less than or equal to it are done.
   #[inline]
-  pub fn set_done_util(&self, val: u64) -> Result<()> {
+  pub fn set_done_until(&self, val: u64) -> Result<()> {
     self
       .check()
       .map(|_| self.inner.done_until.store(val, Ordering::SeqCst))
+  }
+
+  /// Deprecated alias for [`AsyncWaterMark::set_done_until`].
+  #[inline]
+  #[deprecated(note = "renamed to set_done_until")]
+  pub fn set_done_util(&self, val: u64) -> Result<()> {
+    self.set_done_until(val)
   }
 
   /// Returns the last index for which `begin` has been called.
@@ -312,6 +317,7 @@ impl<S: AsyncSpawner> AsyncWaterMark<S> {
   /// Waits until the given index is marked as done.
   #[inline]
   pub async fn wait_for_mark(&self, index: u64) -> Result<()> {
+    self.check()?;
     if self.inner.done_until.load(Ordering::SeqCst) >= index {
       return Ok(());
     }
@@ -370,6 +376,13 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn test_wait_requires_init() {
+    let watermark = AsyncWaterMark::<crate::TokioSpawner>::new("watermark".into());
+    let err = watermark.wait_for_mark(1).await.unwrap_err();
+    assert_eq!(err, WaterMarkError::Uninitialized);
+  }
+
+  #[tokio::test]
   async fn test_begin_done() {
     init_and_close::<crate::TokioSpawner, _, _>(|watermark| async move {
       watermark.begin(1).unwrap();
@@ -402,7 +415,7 @@ mod tests {
   #[tokio::test]
   async fn test_set_done_until() {
     init_and_close::<crate::TokioSpawner, _, _>(|watermark| async move {
-      watermark.set_done_util(1).unwrap();
+      watermark.set_done_until(1).unwrap();
       assert_eq!(watermark.done_until().unwrap(), 1);
     })
     .await;
@@ -417,6 +430,22 @@ mod tests {
       watermark.done_many([2, 3].into_iter().collect()).unwrap();
 
       assert_eq!(watermark.last_index().unwrap(), 3);
+    })
+    .await;
+  }
+
+  #[tokio::test]
+  async fn test_done_before_begin() {
+    use core::time::Duration;
+
+    init_and_close::<crate::TokioSpawner, _, _>(|watermark| async move {
+      watermark.done(1).unwrap();
+      tokio::time::sleep(Duration::from_millis(10)).await;
+      assert_eq!(watermark.done_until().unwrap(), 0);
+
+      watermark.begin(1).unwrap();
+      watermark.wait_for_mark(1).await.unwrap();
+      assert_eq!(watermark.done_until().unwrap(), 1);
     })
     .await;
   }

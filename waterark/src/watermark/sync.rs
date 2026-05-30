@@ -52,18 +52,16 @@ impl Inner {
       let mut pending = pending.borrow_mut();
       let mut waiters = waiters.borrow_mut();
 
-      if !pending.contains_key(&idx) {
-        indices.push(Reverse(idx));
-      }
-
-      let mut delta = 1;
+      let entry = pending.entry(idx).or_insert(0);
       if done {
-        delta = -1;
+        *entry -= 1;
+      } else {
+        if *entry <= 0 {
+          // Only queue the index when a begin arrives, so spurious done calls do not advance progress.
+          indices.push(Reverse(idx));
+        }
+        *entry += 1;
       }
-      pending
-        .entry(idx)
-        .and_modify(|v| *v += delta)
-        .or_insert(delta);
 
       // Update mark by going through all indices in order; and checking if they have
       // been done. Stop at the first index, which isn't done.
@@ -288,10 +286,17 @@ impl WaterMark {
   /// Sets the maximum index that has the property that all indices
   /// less than or equal to it are done.
   #[inline]
-  pub fn set_done_util(&self, val: u64) -> Result<()> {
+  pub fn set_done_until(&self, val: u64) -> Result<()> {
     self
       .check()
       .map(|_| self.inner.done_until.store(val, Ordering::SeqCst))
+  }
+
+  /// Deprecated alias for [`WaterMark::set_done_until`].
+  #[inline]
+  #[deprecated(note = "renamed to set_done_until")]
+  pub fn set_done_util(&self, val: u64) -> Result<()> {
+    self.set_done_until(val)
   }
 
   /// Returns the last index for which `begin` has been called.
@@ -399,9 +404,24 @@ mod tests {
   }
 
   #[test]
+  fn test_done_before_begin() {
+    use core::time::Duration;
+
+    init_and_close(|watermark| {
+      watermark.done(1).unwrap();
+      std::thread::sleep(Duration::from_millis(10));
+      assert_eq!(watermark.done_until().unwrap(), 0);
+
+      watermark.begin(1).unwrap();
+      watermark.wait_for_mark(1).unwrap();
+      assert_eq!(watermark.done_until().unwrap(), 1);
+    });
+  }
+
+  #[test]
   fn test_done_until() {
     init_and_close(|watermark| {
-      watermark.set_done_util(1).unwrap();
+      watermark.set_done_until(1).unwrap();
       assert_eq!(watermark.done_until().unwrap(), 1);
     });
   }
